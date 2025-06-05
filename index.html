@@ -664,13 +664,7 @@
         }
 
         document.addEventListener('DOMContentLoaded', initializeApp);
-        async function loadEntriesFromFirebase() {
-            data = [];
-            const snapshot = await db.collection("cartomel").get();
-            snapshot.forEach(doc => {
-                data.push(doc.data());
-            });
-        }
+
         // --- IMPORT JSON ---
         const importJsonBtn = document.getElementById('import-json-btn');
         const importJsonInput = document.getElementById('import-json-input');
