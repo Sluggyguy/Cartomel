@@ -304,7 +304,7 @@
     id: row.ID || '',
     nom: row.Nom || '',
     espece: row.Espece || '',
-    date: row.Date ? String(row.Date) : '',
+    date: row.Date || '',
     lat: row.Latitude ? parseFloat(row.Latitude) : '',
     lon: row.Longitude ? parseFloat(row.Longitude) : '',
     photoDataURL: row.Photo || '',
@@ -313,14 +313,14 @@
 }
 function mapJSToSheet(entry) {
   return {
-    ID: entry.id || '',
-    Nom: entry.nom || '',
-    Espece: entry.espece || '',
-    Date: entry.date ? String(entry.date) : '',
-    Latitude: entry.lat !== undefined ? String(entry.lat) : '',
-    Longitude: entry.lon !== undefined ? String(entry.lon) : '',
-    Photo: entry.photoDataURL || '',
-    Note: entry.notes || ''
+    ID: entry.id,
+    Nom: entry.nom,
+    Espece: entry.espece,
+    Date: entry.date,
+    Latitude: entry.lat,
+    Longitude: entry.lon,
+    Photo: entry.photoDataURL,
+    Note: entry.notes
   };
 }
 
@@ -543,21 +543,22 @@ let editingEntryId = null;
         form.addEventListener('submit', async function(event) {
             event.preventDefault();
 
-            const espece = document.getElementById('species').value.trim();
+            const nom = document.getElementById('nom').value.trim();
+            const espece = document.getElementById('espece').value.trim();
             let date = document.getElementById('date').value;
-            if (date) date = String(date); // Forcer la date en texte
+            if (date) date = String(date);
             const lat = parseFloat(document.getElementById('latitude').value);
             const lon = parseFloat(document.getElementById('longitude').value);
-            const photoDataURL = photoDataURLInput.value;
-            const notes = document.getElementById('notes').value.trim();
+            const photoDataURL = document.getElementById('photo').dataset.base64 || '';
+            const notes = document.getElementById('commentaire').value.trim();
             const id = editingEntryId || Date.now().toString();
 
-            if (!espece || !date || isNaN(lat) || isNaN(lon)) {
+            if (!nom || !espece || !date || isNaN(lat) || isNaN(lon)) {
                 alert('Merci de remplir tous les champs obligatoires.');
                 return;
             }
 
-            const entry = { id, espece, date, lat, lon, photoDataURL, notes };
+            const entry = { id, nom, espece, date, lat, lon, photoDataURL, notes };
 
             if (editingEntryId) {
                 await updateEntryInSheetDB(entry);
