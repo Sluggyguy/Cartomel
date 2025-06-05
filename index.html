@@ -301,26 +301,26 @@
     // Map JS <-> Sheet colonnes
     function mapSheetToJS(row) {
   return {
-    id: row.ID,
-    nom: row.Non,
-    espece: row.Espece,
-    date: row.Date,
-    lat: parseFloat(row.Latitude) || '',
-    lon: parseFloat(row.Longitude) || '',
-    photoDataURL: row.Photo,
-    notes: row.Note
+    id: row.ID || '',
+    nom: row.Nom || '',
+    espece: row.Espece || '',
+    date: row.Date ? String(row.Date) : '',
+    lat: row.Latitude ? parseFloat(row.Latitude) : '',
+    lon: row.Longitude ? parseFloat(row.Longitude) : '',
+    photoDataURL: row.Photo || '',
+    notes: row.Note || ''
   };
 }
 function mapJSToSheet(entry) {
   return {
-    ID: entry.id,
-    Non: entry.nom,
-    Espece: entry.espece,
-    Date: entry.date,
-    Latitude: entry.lat,
-    Longitude: entry.lon,
-    Photo: entry.photoDataURL,
-    Note: entry.notes
+    ID: entry.id || '',
+    Nom: entry.nom || '',
+    Espece: entry.espece || '',
+    Date: entry.date ? String(entry.date) : '',
+    Latitude: entry.lat !== undefined ? String(entry.lat) : '',
+    Longitude: entry.lon !== undefined ? String(entry.lon) : '',
+    Photo: entry.photoDataURL || '',
+    Note: entry.notes || ''
   };
 }
 
@@ -543,27 +543,27 @@ let editingEntryId = null;
         form.addEventListener('submit', async function(event) {
             event.preventDefault();
 
-            const nom = document.getElementById('nom').value.trim();
-            const espece = document.getElementById('espece').value.trim();
-            const date = document.getElementById('date').value;
+            const espece = document.getElementById('species').value.trim();
+            let date = document.getElementById('date').value;
+            if (date) date = String(date); // Forcer la date en texte
             const lat = parseFloat(document.getElementById('latitude').value);
             const lon = parseFloat(document.getElementById('longitude').value);
             const photoDataURL = photoDataURLInput.value;
             const notes = document.getElementById('notes').value.trim();
             const id = editingEntryId || Date.now().toString();
 
-            if (!nom || !espece || !date || isNaN(lat) || isNaN(lon)) {
+            if (!espece || !date || isNaN(lat) || isNaN(lon)) {
                 alert('Merci de remplir tous les champs obligatoires.');
                 return;
             }
 
-            const entryData = { id, nom, espece, date, lat, lon, photoDataURL, notes };
+            const entry = { id, espece, date, lat, lon, photoDataURL, notes };
 
             if (editingEntryId) {
-                await updateEntryInSheetDB(entryData);
+                await updateEntryInSheetDB(entry);
                 editingEntryId = null;
             } else {
-                await addEntryToSheetDB(entryData);
+                await addEntryToSheetDB(entry);
             }
 
             await loadEntriesFromSheetDB();
@@ -586,7 +586,7 @@ let editingEntryId = null;
                 const row = entriesTableBody.insertRow();
                 row.classList.add('no-entries-message');
                 const cell = row.insertCell();
-                cell.colSpan = 8; // Adjusted colspan for new Photo column
+                cell.colSpan = 7; // Adjusted colspan for new Photo column
                 cell.textContent = "Aucune observation enregistrée pour le moment.";
                 return;
             }
@@ -596,6 +596,7 @@ let editingEntryId = null;
             sortedData.forEach(entry => {
                 const row = entriesTableBody.insertRow();
                 
+                // Photo
                 const photoCell = row.insertCell();
                 if (entry.photoDataURL) {
                     const img = document.createElement('img');
@@ -608,15 +609,22 @@ let editingEntryId = null;
                     };
                     photoCell.appendChild(img);
                 } else {
-                    photoCell.textContent = "-";
+                    photoCell.textContent = '-';
                 }
 
-                row.insertCell().textContent = entry.nom || '';
+                // Espèce
                 row.insertCell().textContent = entry.espece || '';
+
+                // Date
                 row.insertCell().textContent = entry.date || '';
-                row.insertCell().textContent = (typeof entry.lat === 'number' ? entry.lat.toFixed(4) : '');
-                row.insertCell().textContent = (typeof entry.lon === 'number' ? entry.lon.toFixed(4) : '');
-                
+
+                // Lat
+                row.insertCell().textContent = (typeof entry.lat === 'number' && !isNaN(entry.lat)) ? entry.lat.toFixed(4) : '';
+
+                // Lon
+                row.insertCell().textContent = (typeof entry.lon === 'number' && !isNaN(entry.lon)) ? entry.lon.toFixed(4) : '';
+
+                // Notes
                 const notesCell = row.insertCell();
                 notesCell.textContent = entry.notes || '-';
                 notesCell.style.maxWidth = '150px';
@@ -657,7 +665,7 @@ let editingEntryId = null;
         function renderMapMarkers() {
             markersLayer.clearLayers();
             orchidData.forEach(entry => {
-                let popupContent = `<b>${entry.espece || ''}</b><br>${entry.date || ''}<br>Lat: ${typeof entry.lat === 'number' ? entry.lat.toFixed(4) : ''}, Lon: ${typeof entry.lon === 'number' ? entry.lon.toFixed(4) : ''}<br>Notes: ${entry.notes || 'Aucune'}`;
+                let popupContent = `<b>${entry.espece || ''}</b><br>${entry.date || ''}<br>Lat: ${(typeof entry.lat === 'number' && !isNaN(entry.lat)) ? entry.lat.toFixed(4) : ''}, Lon: ${(typeof entry.lon === 'number' && !isNaN(entry.lon)) ? entry.lon.toFixed(4) : ''}<br>Notes: ${entry.notes || 'Aucune'}`;
                 if (entry.photoDataURL) {
                     popupContent += `<br><img src="${entry.photoDataURL}" alt="Photo de ${entry.espece || ''}" class="popup-image">`;
                 }
