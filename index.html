@@ -300,29 +300,29 @@
 
     // Map JS <-> Sheet colonnes
     function mapSheetToJS(row) {
-      return {
-        id: row.ID,
-        nom: row.Non,
-        espece: row.Espece,
-        date: row.Date,
-        latitude: row.Latitude,
-        longitude: row.Longitude,
-        photo: row.Photo,
-        commentaire: row.Note
-      };
-    }
-    function mapJSToSheet(entry) {
-      return {
-        ID: entry.id,
-        Non: entry.nom,
-        Espece: entry.espece,
-        Date: entry.date,
-        Latitude: entry.latitude,
-        Longitude: entry.longitude,
-        Photo: entry.photo,
-        Note: entry.commentaire
-      };
-    }
+  return {
+    id: row.ID,
+    nom: row.Non,
+    espece: row.Espece,
+    date: row.Date,
+    lat: parseFloat(row.Latitude) || '',
+    lon: parseFloat(row.Longitude) || '',
+    photoDataURL: row.Photo,
+    notes: row.Note
+  };
+}
+function mapJSToSheet(entry) {
+  return {
+    ID: entry.id,
+    Non: entry.nom,
+    Espece: entry.espece,
+    Date: entry.date,
+    Latitude: entry.lat,
+    Longitude: entry.lon,
+    Photo: entry.photoDataURL,
+    Note: entry.notes
+  };
+}
 
     // CRUD SheetDB
     async function loadEntriesFromSheetDB() {
@@ -543,20 +543,21 @@ let editingEntryId = null;
         form.addEventListener('submit', async function(event) {
             event.preventDefault();
 
+            const nom = document.getElementById('nom').value.trim();
+            const espece = document.getElementById('espece').value.trim();
+            const date = document.getElementById('date').value;
             const lat = parseFloat(document.getElementById('latitude').value);
             const lon = parseFloat(document.getElementById('longitude').value);
-            const date = document.getElementById('date').value;
-            const species = document.getElementById('species').value.trim();
+            const photoDataURL = photoDataURLInput.value;
             const notes = document.getElementById('notes').value.trim();
             const id = editingEntryId || Date.now().toString();
-            const currentPhotoData = photoDataURLInput.value;
 
-            if (isNaN(lat) || isNaN(lon) || !date || !species) {
-                alert("Veuillez remplir tous les champs obligatoires (Latitude, Longitude, Date, Espèce) avec des données valides.");
+            if (!nom || !espece || !date || isNaN(lat) || isNaN(lon)) {
+                alert('Merci de remplir tous les champs obligatoires.');
                 return;
             }
 
-            const entryData = { id, lat, lon, date, species, notes, photoDataURL: currentPhotoData };
+            const entryData = { id, nom, espece, date, lat, lon, photoDataURL, notes };
 
             if (editingEntryId) {
                 await updateEntryInSheetDB(entryData);
@@ -585,7 +586,7 @@ let editingEntryId = null;
                 const row = entriesTableBody.insertRow();
                 row.classList.add('no-entries-message');
                 const cell = row.insertCell();
-                cell.colSpan = 7; // Adjusted colspan for new Photo column
+                cell.colSpan = 8; // Adjusted colspan for new Photo column
                 cell.textContent = "Aucune observation enregistrée pour le moment.";
                 return;
             }
@@ -599,21 +600,22 @@ let editingEntryId = null;
                 if (entry.photoDataURL) {
                     const img = document.createElement('img');
                     img.src = entry.photoDataURL;
-                    img.alt = `Photo de ${entry.species}`;
+                    img.alt = `Photo de ${entry.espece}`;
                     img.classList.add('photo-thumbnail');
                     img.onclick = () => { // Open full image in new tab or modal
                         const imageWindow = window.open("", "_blank");
-                        imageWindow.document.write(`<img src="${entry.photoDataURL}" style="max-width:100%; max-height:100vh;" alt="Photo de ${entry.species}">`);
+                        imageWindow.document.write(`<img src="${entry.photoDataURL}" style="max-width:100%; max-height:100vh;" alt="Photo de ${entry.espece}">`);
                     };
                     photoCell.appendChild(img);
                 } else {
                     photoCell.textContent = "-";
                 }
 
-                row.insertCell().textContent = entry.species;
-                row.insertCell().textContent = entry.date;
-                row.insertCell().textContent = entry.lat.toFixed(4);
-                row.insertCell().textContent = entry.lon.toFixed(4);
+                row.insertCell().textContent = entry.nom || '';
+                row.insertCell().textContent = entry.espece || '';
+                row.insertCell().textContent = entry.date || '';
+                row.insertCell().textContent = (typeof entry.lat === 'number' ? entry.lat.toFixed(4) : '');
+                row.insertCell().textContent = (typeof entry.lon === 'number' ? entry.lon.toFixed(4) : '');
                 
                 const notesCell = row.insertCell();
                 notesCell.textContent = entry.notes || '-';
@@ -655,9 +657,9 @@ let editingEntryId = null;
         function renderMapMarkers() {
             markersLayer.clearLayers();
             orchidData.forEach(entry => {
-                let popupContent = `<b>${entry.species}</b><br>${entry.date}<br>Lat: ${entry.lat.toFixed(4)}, Lon: ${entry.lon.toFixed(4)}<br>Notes: ${entry.notes || 'Aucune'}`;
+                let popupContent = `<b>${entry.espece || ''}</b><br>${entry.date || ''}<br>Lat: ${typeof entry.lat === 'number' ? entry.lat.toFixed(4) : ''}, Lon: ${typeof entry.lon === 'number' ? entry.lon.toFixed(4) : ''}<br>Notes: ${entry.notes || 'Aucune'}`;
                 if (entry.photoDataURL) {
-                    popupContent += `<br><img src="${entry.photoDataURL}" alt="Photo de ${entry.species}" class="popup-image">`;
+                    popupContent += `<br><img src="${entry.photoDataURL}" alt="Photo de ${entry.espece || ''}" class="popup-image">`;
                 }
                 const marker = L.marker([entry.lat, entry.lon], { icon: pinkDotIcon })
                     .addTo(markersLayer)
