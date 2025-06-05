@@ -294,6 +294,22 @@
     </style>
 </head>
 <body>
+    <!-- Firebase App (core SDK) -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+    <!-- Firestore Database -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+    <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyAhaP4B5LjCyBC71gL6IoUxaFNQh-1-wEU",
+      authDomain: "cartomel.firebaseapp.com",
+      projectId: "cartomel",
+      storageBucket: "cartomel.firebasestorage.app",
+      messagingSenderId: "255784487361",
+      appId: "1:255784487361:web:e675ad328d86bac6d5c740"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+    </script>
     <header>
         <h1>🌷 CartoMel 🌷</h1>
     </header>
@@ -475,7 +491,7 @@
         }
 
         // --- EVENT LISTENERS ---
-        form.addEventListener('submit', function(event) {
+        form.addEventListener('submit', async function(event) {
             event.preventDefault();
 
             const lat = parseFloat(document.getElementById('latitude').value);
@@ -494,22 +510,19 @@
             const entryData = { lat, lon, date, species, notes, photoDataURL: currentPhotoData };
 
             if (id) { // Editing existing entry
-                const index = orchidData.findIndex(entry => entry.id == id);
-                if (index > -1) {
-                    orchidData[index] = { ...orchidData[index], ...entryData }; // Preserve ID
-                }
+                await db.collection("cartomel").doc(id).set(entryData);
                 currentEditId = null;
                 document.getElementById('entry-id').value = '';
                 form.querySelector('button[type="submit"]').textContent = "Sauvegarder l'Observation";
             } else { // Adding new entry
                 const newEntry = {
-                    id: Date.now(),
+                    id: Date.now().toString(),
                     ...entryData
                 };
-                orchidData.push(newEntry);
+                await db.collection("cartomel").doc(newEntry.id).set(newEntry);
             }
 
-            autoSaveData();
+            await loadEntriesFromFirebase();
             renderTable();
             renderMapMarkers();
             form.reset(); // Resets all form fields including file input
@@ -522,35 +535,10 @@
             document.getElementById('longitude').value = e.latlng.lng.toFixed(5);
         });
 
-        // --- DATA STORAGE (File System Access API) ---
-        async function chooseSaveFolder() {
-            if (!window.showDirectoryPicker) {
-                alert("Cette fonctionnalité nécessite Chrome ou Edge récent (API File System Access).");
-                return;
-            }
-            try {
-                dirHandle = await window.showDirectoryPicker();
-                saveStatus.textContent = "Dossier sélectionné.";
-                await autoSaveData();
-            } catch (e) {
-                saveStatus.textContent = "Dossier non sélectionné.";
-            }
-        }
-
-        async function autoSaveData() {
-            if (!dirHandle) {
-                saveStatus.textContent = "Aucun dossier sélectionné.";
-                return;
-            }
-            try {
-                const fileHandle = await dirHandle.getFileHandle("cartomel_observations.json", { create: true });
-                const writable = await fileHandle.createWritable();
-                await writable.write(JSON.stringify(orchidData, null, 2));
-                await writable.close();
-                saveStatus.textContent = "Données sauvegardées !";
-            } catch (e) {
-                saveStatus.textContent = "Erreur lors de la sauvegarde.";
-            }
+        // --- DATA STORAGE (Firebase Firestore) ---
+        async function loadEntriesFromFirebase() {
+            const snapshot = await db.collection("cartomel").get();
+            orchidData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         }
 
         // --- MAP RENDERING ---
@@ -629,7 +617,14 @@
                 deleteBtn.textContent = '🗑️';
                 deleteBtn.title = 'Supprimer';
                 deleteBtn.classList.add('delete-btn');
-                deleteBtn.onclick = () => deleteEntry(entry.id);
+                deleteBtn.onclick = async () => {
+                    if (confirm('Supprimer cette entrée ?')) {
+                        await db.collection("cartomel").doc(entry.id).delete();
+                        await loadEntriesFromFirebase();
+                        renderTable();
+                        renderMapMarkers();
+                    }
+                };
                 actionsCell.appendChild(deleteBtn);
             });
         }
@@ -660,33 +655,22 @@
             }
         }
 
-        function deleteEntry(id) {
-            if (confirm("Êtes-vous sûr de vouloir supprimer cette observation ? Cette action est irréversible.")) {
-                orchidData = orchidData.filter(entry => entry.id !== id);
-                autoSaveData();
-                renderTable();
-                renderMapMarkers();
-                if (currentEditId === id) {
-                    form.reset();
-                    resetPhotoFields();
-                    document.getElementById('entry-id').value = '';
-                    form.querySelector('button[type="submit"]').textContent = "Sauvegarder l'Observation";
-                    currentEditId = null;
-                }
-            }
-        }
-
         // --- INITIAL LOAD ---
-        function initializeApp() {
-            orchidData = [];
+        async function initializeApp() {
+            await loadEntriesFromFirebase();
             renderTable();
             renderMapMarkers();
             resetPhotoFields(); // Ensure photo fields are clear on initial load
         }
 
         document.addEventListener('DOMContentLoaded', initializeApp);
-        document.getElementById('choose-folder-btn').addEventListener('click', chooseSaveFolder);
-
+        async function loadEntriesFromFirebase() {
+            data = [];
+            const snapshot = await db.collection("cartomel").get();
+            snapshot.forEach(doc => {
+                data.push(doc.data());
+            });
+        }
         // --- IMPORT JSON ---
         const importJsonBtn = document.getElementById('import-json-btn');
         const importJsonInput = document.getElementById('import-json-input');
