@@ -294,21 +294,69 @@
     </style>
 </head>
 <body>
-    <!-- Firebase App (core SDK) -->
-    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
-    <!-- Firestore Database -->
-    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+    <!-- SheetDB API integration -->
     <script>
-    const firebaseConfig = {
-      apiKey: "AIzaSyAhaP4B5LjCyBC71gL6IoUxaFNQh-1-wEU",
-      authDomain: "cartomel.firebaseapp.com",
-      projectId: "cartomel",
-      storageBucket: "cartomel.appspot.com",
-      messagingSenderId: "255784487361",
-      appId: "1:255784487361:web:e675ad328d86bac6d5c740"
-    };
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.firestore();
+    const SHEETDB_API = 'https://sheetdb.io/api/v1/lu6n1v2eknitd';
+
+    // Map JS <-> Sheet colonnes
+    function mapSheetToJS(row) {
+      return {
+        id: row.ID,
+        nom: row.Non,
+        espece: row.Espece,
+        date: row.Date,
+        latitude: row.Latitude,
+        longitude: row.Longitude,
+        photo: row.Photo,
+        commentaire: row.Note
+      };
+    }
+    function mapJSToSheet(entry) {
+      return {
+        ID: entry.id,
+        Non: entry.nom,
+        Espece: entry.espece,
+        Date: entry.date,
+        Latitude: entry.latitude,
+        Longitude: entry.longitude,
+        Photo: entry.photo,
+        Note: entry.commentaire
+      };
+    }
+
+    // CRUD SheetDB
+    async function loadEntriesFromSheetDB() {
+      try {
+        const res = await fetch(SHEETDB_API);
+        const rows = await res.json();
+        orchidData = rows.map(mapSheetToJS);
+        console.log('Données chargées depuis SheetDB:', orchidData);
+      } catch (e) {
+        alert('Erreur de chargement SheetDB: ' + e.message);
+        orchidData = [];
+      }
+    }
+    async function addEntryToSheetDB(entry) {
+      const res = await fetch(SHEETDB_API, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ data: [mapJSToSheet(entry)] })
+      });
+      return res.ok;
+    }
+    async function updateEntryInSheetDB(entry) {
+      // SheetDB PUT by ID (clé primaire)
+      const res = await fetch(`${SHEETDB_API}/ID/${entry.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ data: mapJSToSheet(entry) })
+      });
+      return res.ok;
+    }
+    async function deleteEntryFromSheetDB(id) {
+      const res = await fetch(`${SHEETDB_API}/ID/${id}`, { method: 'DELETE' });
+      return res.ok;
+    }
     </script>
     <header>
         <h1>🌷 CartoMel 🌷</h1>
@@ -499,7 +547,7 @@
             const date = document.getElementById('date').value;
             const species = document.getElementById('species').value.trim();
             const notes = document.getElementById('notes').value.trim();
-            const id = document.getElementById('entry-id').value;
+            const id = editingEntryId || Date.now().toString();
             const currentPhotoData = photoDataURLInput.value;
 
             if (isNaN(lat) || isNaN(lon) || !date || !species) {
@@ -507,53 +555,26 @@
                 return;
             }
 
-            const entryData = { lat, lon, date, species, notes, photoDataURL: currentPhotoData };
+            const entryData = { id, lat, lon, date, species, notes, photoDataURL: currentPhotoData };
 
-            if (id) { // Editing existing entry
-                await db.collection("cartomel").doc(id).set(entryData);
-                currentEditId = null;
-                document.getElementById('entry-id').value = '';
-                form.querySelector('button[type="submit"]').textContent = "Sauvegarder l'Observation";
-            } else { // Adding new entry
-                const newEntry = {
-                    id: Date.now().toString(),
-                    ...entryData
-                };
-                await db.collection("cartomel").doc(newEntry.id).set(newEntry);
+            if (editingEntryId) {
+                await updateEntryInSheetDB(entryData);
+                editingEntryId = null;
+            } else {
+                await addEntryToSheetDB(entryData);
             }
 
-            await loadEntriesFromFirebase();
+            await loadEntriesFromSheetDB();
             renderTable();
             renderMapMarkers();
-            form.reset(); // Resets all form fields including file input
-            resetPhotoFields(); // Explicitly reset photo related fields and preview
-
+            resetPhotoFields();
+            form.reset();
         });
 
         map.on('click', function(e) {
             document.getElementById('latitude').value = e.latlng.lat.toFixed(5);
             document.getElementById('longitude').value = e.latlng.lng.toFixed(5);
         });
-
-        // --- DATA STORAGE (Firebase Firestore) ---
-        async function loadEntriesFromFirebase() {
-            const snapshot = await db.collection("cartomel").get();
-            orchidData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        }
-
-        // --- MAP RENDERING ---
-        function renderMapMarkers() {
-            markersLayer.clearLayers();
-            orchidData.forEach(entry => {
-                let popupContent = `<b>${entry.species}</b><br>${entry.date}<br>Lat: ${entry.lat.toFixed(4)}, Lon: ${entry.lon.toFixed(4)}<br>Notes: ${entry.notes || 'Aucune'}`;
-                if (entry.photoDataURL) {
-                    popupContent += `<br><img src="${entry.photoDataURL}" alt="Photo de ${entry.species}" class="popup-image">`;
-                }
-                const marker = L.marker([entry.lat, entry.lon], { icon: pinkDotIcon })
-                    .addTo(markersLayer)
-                    .bindPopup(popupContent);
-            });
-        }
 
         // --- TABLE RENDERING ---
         function renderTable() {
@@ -617,15 +638,29 @@
                 deleteBtn.textContent = '🗑️';
                 deleteBtn.title = 'Supprimer';
                 deleteBtn.classList.add('delete-btn');
-                deleteBtn.onclick = async () => {
+                deleteBtn.onclick = async function deleteEntry(id) {
                     if (confirm('Supprimer cette entrée ?')) {
-                        await db.collection("cartomel").doc(entry.id).delete();
-                        await loadEntriesFromFirebase();
+                        await deleteEntryFromSheetDB(id);
+                        await loadEntriesFromSheetDB();
                         renderTable();
                         renderMapMarkers();
                     }
-                };
+                }.bind(null, entry.id);
                 actionsCell.appendChild(deleteBtn);
+            });
+        }
+
+        // --- MAP RENDERING ---
+        function renderMapMarkers() {
+            markersLayer.clearLayers();
+            orchidData.forEach(entry => {
+                let popupContent = `<b>${entry.species}</b><br>${entry.date}<br>Lat: ${entry.lat.toFixed(4)}, Lon: ${entry.lon.toFixed(4)}<br>Notes: ${entry.notes || 'Aucune'}`;
+                if (entry.photoDataURL) {
+                    popupContent += `<br><img src="${entry.photoDataURL}" alt="Photo de ${entry.species}" class="popup-image">`;
+                }
+                const marker = L.marker([entry.lat, entry.lon], { icon: pinkDotIcon })
+                    .addTo(markersLayer)
+                    .bindPopup(popupContent);
             });
         }
 
@@ -650,14 +685,14 @@
                 }
 
                 form.querySelector('button[type="submit"]').textContent = 'Modifier l\'Observation';
-                currentEditId = entry.id;
+                editingEntryId = entry.id;
                 form.scrollIntoView({ behavior: 'smooth', block: 'start' });
             }
         }
 
         // --- INITIAL LOAD ---
         async function initializeApp() {
-            await loadEntriesFromFirebase();
+            await loadEntriesFromSheetDB();
             renderTable();
             renderMapMarkers();
             resetPhotoFields(); // Ensure photo fields are clear on initial load
