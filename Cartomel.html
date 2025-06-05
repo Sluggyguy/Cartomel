@@ -1,0 +1,729 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cartographie d'Orchidées avec Photos</title>
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+     integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+     crossorigin=""/>
+    <!-- EXIF.js for reading image metadata -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/exif-js/2.3.0/exif.min.js"></script>
+    <style>
+        /* Basic Styling */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f7f6;
+            color: #333;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        header {
+            background-color: #4A7C59; /* Greenish color */
+            color: white;
+            padding: 1em;
+            text-align: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        header h1 {
+            margin: 0;
+            font-size: 1.8em;
+        }
+
+        .main-container {
+            display: flex;
+            flex-wrap: wrap; /* Allow wrapping for smaller screens */
+            flex-grow: 1;
+            padding: 20px;
+            gap: 20px;
+        }
+
+        #map-column {
+            flex: 3; /* Map takes more space */
+            min-width: 300px; /* Minimum width for map */
+            display: flex;
+            flex-direction: column;
+        }
+
+        #map {
+            height: 500px;
+            width: 100%;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .map-instructions {
+            font-size: 0.9em;
+            color: #555;
+            margin-top: 8px;
+            text-align: center;
+        }
+
+
+        #form-column {
+            flex: 2; /* Form takes less space */
+            min-width: 300px; /* Minimum width for form/table */
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .form-section, .entries-section {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+
+        .form-section h2, .entries-section h2 {
+            margin-top: 0;
+            color: #4A7C59;
+            border-bottom: 2px solid #e0e0e0;
+            padding-bottom: 10px;
+            font-size: 1.4em;
+        }
+
+        /* Form elements styling */
+        #orchid-form div {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            font-size: 0.95em;
+        }
+
+        input[type="text"],
+        input[type="number"],
+        input[type="date"],
+        input[type="file"],
+        textarea {
+            width: calc(100% - 22px); /* Account for padding and border */
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            box-sizing: border-box; /* Important for width calculation */
+            font-size: 1em;
+        }
+        input[type="file"] {
+            padding: 7px; /* Specific padding for file input */
+        }
+
+
+        textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        #orchid-form button[type="submit"] {
+            padding: 12px 20px;
+            background-color: #5cb85c;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1em;
+            transition: background-color 0.3s ease;
+            width: 100%;
+        }
+
+        #orchid-form button[type="submit"]:hover {
+            background-color: #4cae4c;
+        }
+
+        #photo-preview {
+            max-width: 100%;
+            max-height: 150px;
+            margin-top: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            display: none; /* Hidden by default */
+        }
+        #clear-photo-btn {
+            background-color: #f39c12;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.8em;
+            margin-top: 5px;
+            display: none; /* Hidden by default */
+        }
+        #clear-photo-btn:hover {
+            background-color: #e67e22;
+        }
+
+
+        /* Table styling */
+        #entries-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+
+        #entries-table th, #entries-table td {
+            border: 1px solid #e0e0e0;
+            padding: 10px;
+            text-align: left;
+            font-size: 0.9em;
+            vertical-align: middle;
+        }
+
+        #entries-table th {
+            background-color: #f9f9f9;
+            color: #333;
+            font-weight: 600;
+        }
+
+        #entries-table tbody tr:nth-child(odd) {
+            background-color: #fdfdfd;
+        }
+        #entries-table tbody tr:hover {
+            background-color: #f0f0f0;
+        }
+         #entries-table .photo-thumbnail {
+            max-width: 50px;
+            max-height: 50px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+
+        .action-buttons button {
+            margin-right: 5px;
+            padding: 6px 10px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.85em;
+            transition: background-color 0.2s ease;
+        }
+
+        .edit-btn {
+            background-color: #3498db; /* Blue */
+            color: white;
+        }
+        .edit-btn:hover {
+            background-color: #2980b9;
+        }
+
+        .delete-btn {
+            background-color: #e74c3c; /* Red */
+            color: white;
+        }
+        .delete-btn:hover {
+            background-color: #c0392b;
+        }
+
+        .no-entries-message td {
+            text-align: center;
+            padding: 20px;
+            color: #777;
+            font-style: italic;
+        }
+
+        /* Pink marker style (using L.DivIcon) */
+        .custom-pink-dot-icon div {
+            background-color: deeppink;
+            width: 14px; /* Slightly larger */
+            height: 14px;
+            border-radius: 50%;
+            border: 2px solid white; /* White border for better visibility */
+            box-shadow: 0 0 3px rgba(0,0,0,0.5);
+        }
+
+        /* Popup image style */
+        .popup-image {
+            max-width: 200px;
+            max-height: 200px;
+            display: block;
+            margin-top: 8px;
+            border-radius: 4px;
+            border: 1px solid #ccc;
+        }
+
+
+        footer {
+            text-align: center;
+            padding: 15px;
+            background-color: #333;
+            color: #aaa;
+            font-size: 0.9em;
+            margin-top: auto; /* Pushes footer to the bottom */
+        }
+        #loading-message {
+            display: none;
+            color: #4A7C59;
+            font-style: italic;
+            margin-top: 5px;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .main-container {
+                flex-direction: column;
+            }
+            #map-column, #form-column {
+                flex: 1; /* Stack them */
+                width: 100%;
+            }
+            header h1 {
+                font-size: 1.5em;
+            }
+             #orchid-form button[type="submit"] {
+                font-size: 0.95em;
+            }
+            .action-buttons button {
+                 font-size: 0.8em;
+                 padding: 5px 8px;
+            }
+            #entries-table th, #entries-table td {
+                padding: 8px;
+                font-size: 0.85em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>🌷 CartoMel 🌷</h1>
+    </header>
+
+    <div class="main-container">
+        <div id="map-column">
+            <div id="map"></div>
+            <p class="map-instructions">Cliquez sur la carte pour obtenir les coordonnées ou chargez une photo avec GPS.</p>
+        </div>
+
+        <div id="form-column">
+            <section class="form-section">
+                <h2>Ajouter/Modifier une Observation</h2>
+                <form id="orchid-form">
+                    <div>
+                        <label for="photoFile">Photo (JPEG/PNG, optionnel):</label>
+                        <input type="file" id="photoFile" name="photoFile" accept="image/jpeg, image/png">
+                        <img id="photo-preview" src="#" alt="Aperçu photo"/>
+                        <button type="button" id="clear-photo-btn">Retirer la photo</button>
+                        <p id="loading-message">Extraction des données GPS...</p>
+                    </div>
+                    <div>
+                        <label for="latitude">Latitude:</label>
+                        <input type="number" id="latitude" name="latitude" step="any" required placeholder="Ex: 48.1173">
+                    </div>
+                    <div>
+                        <label for="longitude">Longitude:</label>
+                        <input type="number" id="longitude" name="longitude" step="any" required placeholder="Ex: -1.6778">
+                    </div>
+                    <div>
+                        <label for="date">Date:</label>
+                        <input type="date" id="date" name="date" required>
+                    </div>
+                    <div>
+                        <label for="species">Espèce:</label>
+                        <input type="text" id="species" name="species" required placeholder="Nom de l'orchidée">
+                    </div>
+                    <div>
+                        <label for="notes">Notes (optionnel):</label>
+                        <textarea id="notes" name="notes" placeholder="Détails supplémentaires..."></textarea>
+                    </div>
+                    <input type="hidden" id="entry-id"> <!-- For editing -->
+                    <input type="hidden" id="photoDataURL"> <!-- To store photo data URL -->
+                    <button type="submit">Sauvegarder l'Observation</button>
+                </form>
+            </section>
+
+            <section class="entries-section">
+                <h2>Observations Enregistrées</h2>
+                <button id="choose-folder-btn" style="margin-bottom:10px;background-color:#4A7C59;color:white;border:none;padding:8px 16px;border-radius:5px;cursor:pointer;font-size:1em;">Choisir dossier de sauvegarde</button>
+                <input type="file" id="import-json-input" accept="application/json" style="display:none" />
+                <button id="import-json-btn" style="margin-bottom:10px;background-color:#3498db;color:white;border:none;padding:8px 16px;border-radius:5px;cursor:pointer;font-size:1em;">Importer des observations (JSON)</button>
+                <span id="save-status" style="margin-left:10px;color:#4A7C59;font-weight:bold;"></span>
+                <div style="overflow-x:auto;"> <!-- For table responsiveness -->
+                    <table id="entries-table">
+                        <thead>
+                            <tr>
+                                <th>Photo</th>
+                                <th>Espèce</th>
+                                <th>Date</th>
+                                <th>Lat.</th>
+                                <th>Lon.</th>
+                                <th>Notes</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Les données seront insérées ici par JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <footer>
+        <p>&copy; 2024-2025 Cartographie d'Orchidées. Tous droits réservés.</p>
+    </footer>
+
+    <!-- Leaflet JavaScript -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+     integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+     crossorigin=""></script>
+
+    <script>
+        // --- MAP INITIALIZATION ---
+        const map = L.map('map').setView([48.1173, -1.6778], 7); // Rennes, France
+        const tileLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        });
+        tileLayer.addTo(map);
+
+        // --- GLOBAL VARIABLES ---
+        let orchidData = [];
+        let currentEditId = null;
+        const form = document.getElementById('orchid-form');
+        const entriesTableBody = document.getElementById('entries-table').getElementsByTagName('tbody')[0];
+        let markersLayer = L.layerGroup().addTo(map);
+        const photoFileInput = document.getElementById('photoFile');
+        const photoPreview = document.getElementById('photo-preview');
+        const photoDataURLInput = document.getElementById('photoDataURL');
+        const clearPhotoButton = document.getElementById('clear-photo-btn');
+        const loadingMessage = document.getElementById('loading-message');
+        let dirHandle = null;
+        const saveStatus = document.getElementById('save-status');
+
+        // --- CUSTOM PINK MARKER ICON ---
+        const pinkDotIcon = L.divIcon({
+            className: 'custom-pink-dot-icon',
+            html: '<div></div>',
+            iconSize: [14, 14],
+            iconAnchor: [7, 7]
+        });
+
+        // --- HELPER FUNCTION to convert GPS DMS to Decimal Degrees ---
+        function convertDMSToDD(degrees, minutes, seconds, direction) {
+            if (degrees === undefined || minutes === undefined || seconds === undefined || direction === undefined) {
+                return null;
+            }
+            let dd = degrees + minutes / 60 + seconds / (60 * 60);
+            if (direction == "S" || direction == "W") {
+                dd = dd * -1;
+            }
+            return dd;
+        }
+
+        // --- PHOTO HANDLING ---
+        photoFileInput.addEventListener('change', function(event) {
+            const file = event.target.files[0];
+            if (file) {
+                loadingMessage.style.display = 'block';
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    photoPreview.src = e.target.result;
+                    photoPreview.style.display = 'block';
+                    photoDataURLInput.value = e.target.result; // Store Data URL
+                    clearPhotoButton.style.display = 'inline-block';
+                }
+                reader.readAsDataURL(file);
+
+                EXIF.getData(file, function() {
+                    loadingMessage.style.display = 'none';
+                    const latArr = EXIF.getTag(this, "GPSLatitude");
+                    const lonArr = EXIF.getTag(this, "GPSLongitude");
+                    const latRef = EXIF.getTag(this, "GPSLatitudeRef");
+                    const lonRef = EXIF.getTag(this, "GPSLongitudeRef");
+
+                    if (latArr && lonArr && latRef && lonRef) {
+                        const latitude = convertDMSToDD(latArr[0], latArr[1], latArr[2], latRef);
+                        const longitude = convertDMSToDD(lonArr[0], lonArr[1], lonArr[2], lonRef);
+
+                        if (latitude !== null && longitude !== null) {
+                            document.getElementById('latitude').value = latitude.toFixed(5);
+                            document.getElementById('longitude').value = longitude.toFixed(5);
+                            alert("Coordonnées GPS extraites de la photo et insérées.");
+                        } else {
+                           alert("Impossible de convertir les coordonnées GPS de la photo.");
+                        }
+                    } else {
+                        alert("Aucune donnée GPS trouvée dans cette image. Veuillez les entrer manuellement ou cliquer sur la carte.");
+                    }
+                });
+            } else {
+                 resetPhotoFields();
+            }
+        });
+        
+        clearPhotoButton.addEventListener('click', function() {
+            resetPhotoFields();
+        });
+
+        function resetPhotoFields() {
+            photoFileInput.value = ''; // Clear file input
+            photoPreview.src = '#';
+            photoPreview.style.display = 'none';
+            photoDataURLInput.value = '';
+            clearPhotoButton.style.display = 'none';
+            loadingMessage.style.display = 'none';
+        }
+
+        // --- EVENT LISTENERS ---
+        form.addEventListener('submit', function(event) {
+            event.preventDefault();
+
+            const lat = parseFloat(document.getElementById('latitude').value);
+            const lon = parseFloat(document.getElementById('longitude').value);
+            const date = document.getElementById('date').value;
+            const species = document.getElementById('species').value.trim();
+            const notes = document.getElementById('notes').value.trim();
+            const id = document.getElementById('entry-id').value;
+            const currentPhotoData = photoDataURLInput.value;
+
+            if (isNaN(lat) || isNaN(lon) || !date || !species) {
+                alert("Veuillez remplir tous les champs obligatoires (Latitude, Longitude, Date, Espèce) avec des données valides.");
+                return;
+            }
+
+            const entryData = { lat, lon, date, species, notes, photoDataURL: currentPhotoData };
+
+            if (id) { // Editing existing entry
+                const index = orchidData.findIndex(entry => entry.id == id);
+                if (index > -1) {
+                    orchidData[index] = { ...orchidData[index], ...entryData }; // Preserve ID
+                }
+                currentEditId = null;
+                document.getElementById('entry-id').value = '';
+                form.querySelector('button[type="submit"]').textContent = "Sauvegarder l'Observation";
+            } else { // Adding new entry
+                const newEntry = {
+                    id: Date.now(),
+                    ...entryData
+                };
+                orchidData.push(newEntry);
+            }
+
+            autoSaveData();
+            renderTable();
+            renderMapMarkers();
+            form.reset(); // Resets all form fields including file input
+            resetPhotoFields(); // Explicitly reset photo related fields and preview
+
+        });
+
+        map.on('click', function(e) {
+            document.getElementById('latitude').value = e.latlng.lat.toFixed(5);
+            document.getElementById('longitude').value = e.latlng.lng.toFixed(5);
+        });
+
+        // --- DATA STORAGE (File System Access API) ---
+        async function chooseSaveFolder() {
+            if (!window.showDirectoryPicker) {
+                alert("Cette fonctionnalité nécessite Chrome ou Edge récent (API File System Access).");
+                return;
+            }
+            try {
+                dirHandle = await window.showDirectoryPicker();
+                saveStatus.textContent = "Dossier sélectionné.";
+                await autoSaveData();
+            } catch (e) {
+                saveStatus.textContent = "Dossier non sélectionné.";
+            }
+        }
+
+        async function autoSaveData() {
+            if (!dirHandle) {
+                saveStatus.textContent = "Aucun dossier sélectionné.";
+                return;
+            }
+            try {
+                const fileHandle = await dirHandle.getFileHandle("cartomel_observations.json", { create: true });
+                const writable = await fileHandle.createWritable();
+                await writable.write(JSON.stringify(orchidData, null, 2));
+                await writable.close();
+                saveStatus.textContent = "Données sauvegardées !";
+            } catch (e) {
+                saveStatus.textContent = "Erreur lors de la sauvegarde.";
+            }
+        }
+
+        // --- MAP RENDERING ---
+        function renderMapMarkers() {
+            markersLayer.clearLayers();
+            orchidData.forEach(entry => {
+                let popupContent = `<b>${entry.species}</b><br>${entry.date}<br>Lat: ${entry.lat.toFixed(4)}, Lon: ${entry.lon.toFixed(4)}<br>Notes: ${entry.notes || 'Aucune'}`;
+                if (entry.photoDataURL) {
+                    popupContent += `<br><img src="${entry.photoDataURL}" alt="Photo de ${entry.species}" class="popup-image">`;
+                }
+                const marker = L.marker([entry.lat, entry.lon], { icon: pinkDotIcon })
+                    .addTo(markersLayer)
+                    .bindPopup(popupContent);
+            });
+        }
+
+        // --- TABLE RENDERING ---
+        function renderTable() {
+            entriesTableBody.innerHTML = '';
+
+            if (orchidData.length === 0) {
+                const row = entriesTableBody.insertRow();
+                row.classList.add('no-entries-message');
+                const cell = row.insertCell();
+                cell.colSpan = 7; // Adjusted colspan for new Photo column
+                cell.textContent = "Aucune observation enregistrée pour le moment.";
+                return;
+            }
+            
+            const sortedData = [...orchidData].sort((a,b) => new Date(b.date) - new Date(a.date));
+
+            sortedData.forEach(entry => {
+                const row = entriesTableBody.insertRow();
+                
+                const photoCell = row.insertCell();
+                if (entry.photoDataURL) {
+                    const img = document.createElement('img');
+                    img.src = entry.photoDataURL;
+                    img.alt = `Photo de ${entry.species}`;
+                    img.classList.add('photo-thumbnail');
+                    img.onclick = () => { // Open full image in new tab or modal
+                        const imageWindow = window.open("", "_blank");
+                        imageWindow.document.write(`<img src="${entry.photoDataURL}" style="max-width:100%; max-height:100vh;" alt="Photo de ${entry.species}">`);
+                    };
+                    photoCell.appendChild(img);
+                } else {
+                    photoCell.textContent = "-";
+                }
+
+                row.insertCell().textContent = entry.species;
+                row.insertCell().textContent = entry.date;
+                row.insertCell().textContent = entry.lat.toFixed(4);
+                row.insertCell().textContent = entry.lon.toFixed(4);
+                
+                const notesCell = row.insertCell();
+                notesCell.textContent = entry.notes || '-';
+                notesCell.style.maxWidth = '150px';
+                notesCell.style.whiteSpace = 'nowrap';
+                notesCell.style.overflow = 'hidden';
+                notesCell.style.textOverflow = 'ellipsis';
+                if (entry.notes) {
+                    notesCell.title = entry.notes;
+                }
+
+                const actionsCell = row.insertCell();
+                actionsCell.classList.add('action-buttons');
+
+                const editBtn = document.createElement('button');
+                editBtn.textContent = '✏️';
+                editBtn.title = 'Modifier';
+                editBtn.classList.add('edit-btn');
+                editBtn.onclick = () => loadEntryForEdit(entry.id);
+                actionsCell.appendChild(editBtn);
+
+                const deleteBtn = document.createElement('button');
+                deleteBtn.textContent = '🗑️';
+                deleteBtn.title = 'Supprimer';
+                deleteBtn.classList.add('delete-btn');
+                deleteBtn.onclick = () => deleteEntry(entry.id);
+                actionsCell.appendChild(deleteBtn);
+            });
+        }
+
+        // --- EDIT AND DELETE FUNCTIONS ---
+        function loadEntryForEdit(id) {
+            const entry = orchidData.find(e => e.id === id);
+            if (entry) {
+                document.getElementById('latitude').value = entry.lat;
+                document.getElementById('longitude').value = entry.lon;
+                document.getElementById('date').value = entry.date;
+                document.getElementById('species').value = entry.species;
+                document.getElementById('notes').value = entry.notes;
+                document.getElementById('entry-id').value = entry.id;
+                
+                if (entry.photoDataURL) {
+                    photoPreview.src = entry.photoDataURL;
+                    photoPreview.style.display = 'block';
+                    photoDataURLInput.value = entry.photoDataURL;
+                    clearPhotoButton.style.display = 'inline-block';
+                } else {
+                   resetPhotoFields();
+                }
+
+                form.querySelector('button[type="submit"]').textContent = 'Modifier l\'Observation';
+                currentEditId = entry.id;
+                form.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        }
+
+        function deleteEntry(id) {
+            if (confirm("Êtes-vous sûr de vouloir supprimer cette observation ? Cette action est irréversible.")) {
+                orchidData = orchidData.filter(entry => entry.id !== id);
+                autoSaveData();
+                renderTable();
+                renderMapMarkers();
+                if (currentEditId === id) {
+                    form.reset();
+                    resetPhotoFields();
+                    document.getElementById('entry-id').value = '';
+                    form.querySelector('button[type="submit"]').textContent = "Sauvegarder l'Observation";
+                    currentEditId = null;
+                }
+            }
+        }
+
+        // --- INITIAL LOAD ---
+        function initializeApp() {
+            orchidData = [];
+            renderTable();
+            renderMapMarkers();
+            resetPhotoFields(); // Ensure photo fields are clear on initial load
+        }
+
+        document.addEventListener('DOMContentLoaded', initializeApp);
+        document.getElementById('choose-folder-btn').addEventListener('click', chooseSaveFolder);
+
+        // --- IMPORT JSON ---
+        const importJsonBtn = document.getElementById('import-json-btn');
+        const importJsonInput = document.getElementById('import-json-input');
+
+        importJsonBtn.addEventListener('click', () => {
+            importJsonInput.value = '';
+            importJsonInput.click();
+        });
+
+        importJsonInput.addEventListener('change', (event) => {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const imported = JSON.parse(e.target.result);
+                    if (!Array.isArray(imported)) {
+                        alert('Le fichier JSON doit contenir un tableau d\'observations.');
+                        return;
+                    }
+                    // Vérification minimale du format
+                    const valid = imported.every(entry => 'lat' in entry && 'lon' in entry && 'date' in entry && 'species' in entry);
+                    if (!valid) {
+                        alert('Format d\'observation invalide dans le fichier.');
+                        return;
+                    }
+                    if (!confirm('Importer ce fichier va remplacer toutes les observations existantes. Continuer ?')) return;
+                    orchidData = imported;
+                    renderTable();
+                    renderMapMarkers();
+                    saveStatus.textContent = 'Données importées (non sauvegardées tant que vous ne cliquez pas sur "Choisir dossier de sauvegarde")';
+                } catch (err) {
+                    alert('Erreur lors de l\'importation du fichier JSON : ' + err.message);
+                }
+            };
+            reader.readAsText(file);
+        });
+    </script>
+</body>
+</html>
