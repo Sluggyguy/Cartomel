@@ -550,7 +550,8 @@ let editingEntryId = null;
             const notes = document.getElementById('notes').value.trim();
             const id = editingEntryId || Date.now().toString();
             // La photo reste en local pour affichage mais n'est pas envoyée à SheetDB
-            const photoDataURL = document.getElementById('photoDataURL').value || '';
+            // Utilise la variable globale (mise à jour lors de la sélection du fichier)
+            const photoDataURL = window.photoDataURL || '';
 
             if (!espece || !date || isNaN(lat) || isNaN(lon)) {
                 alert('Merci de remplir tous les champs obligatoires.');
@@ -591,15 +592,30 @@ let editingEntryId = null;
             form.reset();
         });
 
+        // Gestion de la sélection de la photo : stocke le DataURL dans une variable globale
+        document.getElementById('photoFile').addEventListener('change', function(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    window.photoDataURL = e.target.result;
+                    document.getElementById('photoDataURL').value = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            } else {
+                window.photoDataURL = '';
+                document.getElementById('photoDataURL').value = '';
+            }
+        });
+
         // Fonction d'upload sur Imgur
         async function uploadToImgur(base64Image) {
             const response = await fetch('https://api.imgur.com/3/image', {
                 method: 'POST',
                 headers: {
-                    Authorization: 'Client-ID 96306b07074447f',
-                    Accept: 'application/json',
+                    Authorization: 'Client-ID 96306b07074447f'
                 },
-                body: JSON.stringify({ image: base64Image.split(',')[1] })
+                body: new URLSearchParams({ image: base64Image.split(',')[1] })
             });
             const data = await response.json();
             if (!data.success) {
