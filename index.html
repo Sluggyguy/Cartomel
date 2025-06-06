@@ -404,10 +404,6 @@
 
             <section class="entries-section">
                 <h2>Observations Enregistrées</h2>
-                <button id="choose-folder-btn" style="margin-bottom:10px;background-color:#4A7C59;color:white;border:none;padding:8px 16px;border-radius:5px;cursor:pointer;font-size:1em;">Choisir dossier de sauvegarde</button>
-                <input type="file" id="import-json-input" accept="application/json" style="display:none" />
-                <button id="import-json-btn" style="margin-bottom:10px;background-color:#3498db;color:white;border:none;padding:8px 16px;border-radius:5px;cursor:pointer;font-size:1em;">Importer des observations (JSON)</button>
-                <span id="save-status" style="margin-left:10px;color:#4A7C59;font-weight:bold;"></span>
                 <div style="overflow-x:auto;"> <!-- For table responsiveness -->
                     <table id="entries-table">
                         <thead>
@@ -545,8 +541,8 @@ let editingEntryId = null;
 
             const espece = document.getElementById('species').value.trim();
             const date = document.getElementById('date').value;
-            const lat = parseFloat(document.getElementById('latitude').value);
-            const lon = parseFloat(document.getElementById('longitude').value);
+            const lat = parseFloat(document.getElementById('latitude').value.replace(',', '.'));
+            const lon = parseFloat(document.getElementById('longitude').value.replace(',', '.'));
             const notes = document.getElementById('notes').value.trim();
             const id = editingEntryId || Date.now().toString();
             // La photo reste en local pour affichage mais n'est pas envoyée à SheetDB
@@ -714,43 +710,7 @@ let editingEntryId = null;
 
         document.addEventListener('DOMContentLoaded', initializeApp);
 
-        // --- IMPORT JSON ---
-        const importJsonBtn = document.getElementById('import-json-btn');
-        const importJsonInput = document.getElementById('import-json-input');
 
-        importJsonBtn.addEventListener('click', () => {
-            importJsonInput.value = '';
-            importJsonInput.click();
-        });
-
-        importJsonInput.addEventListener('change', (event) => {
-            const file = event.target.files[0];
-            if (!file) return;
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                try {
-                    const imported = JSON.parse(e.target.result);
-                    if (!Array.isArray(imported)) {
-                        alert('Le fichier JSON doit contenir un tableau d\'observations.');
-                        return;
-                    }
-                    // Vérification minimale du format
-                    const valid = imported.every(entry => 'lat' in entry && 'lon' in entry && 'date' in entry && 'species' in entry);
-                    if (!valid) {
-                        alert('Format d\'observation invalide dans le fichier.');
-                        return;
-                    }
-                    if (!confirm('Importer ce fichier va remplacer toutes les observations existantes. Continuer ?')) return;
-                    orchidData = imported;
-                    renderTable();
-                    renderMapMarkers();
-                    saveStatus.textContent = 'Données importées (non sauvegardées tant que vous ne cliquez pas sur "Choisir dossier de sauvegarde")';
-                } catch (err) {
-                    alert('Erreur lors de l\'importation du fichier JSON : ' + err.message);
-                }
-            };
-            reader.readAsText(file);
-        });
     </script>
 </body>
 </html>
