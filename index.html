@@ -304,8 +304,8 @@
         id: row.ID || '',
         espece: row.Espece || '',
         date: row.Date || '',
-        lat: row.Latitude ? parseFloat(row.Latitude) : '',
-        lon: row.Longitude ? parseFloat(row.Longitude) : '',
+        lat: row.Latitude ? parseFloat(String(row.Latitude).replace(',', '.')) : '',
+        lon: row.Longitude ? parseFloat(String(row.Longitude).replace(',', '.')) : '',
         notes: row.Note || '',
         // La photo n'est plus synchronisée avec SheetDB
       };
