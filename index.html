@@ -561,9 +561,13 @@ let editingEntryId = null;
             let photoURL = '';
             if (photoDataURL) {
                 try {
+                    console.log('photoDataURL envoyé à Imgur:', photoDataURL.slice(0, 100) + '...');
                     photoURL = await uploadToImgur(photoDataURL);
                 } catch (err) {
                     alert("Erreur d'upload de la photo : " + err.message);
+                    if (err.response) {
+                        console.error('Réponse complète Imgur:', err.response);
+                    }
                     photoURL = '';
                 }
             }
@@ -598,7 +602,11 @@ let editingEntryId = null;
                 body: JSON.stringify({ image: base64Image.split(',')[1] })
             });
             const data = await response.json();
-            if (!data.success) throw new Error(data.data?.error || 'Erreur Imgur');
+            if (!data.success) {
+                const err = new Error(data.data?.error || 'Erreur Imgur');
+                err.response = data;
+                throw err;
+            }
             return data.data.link;
         }
 
