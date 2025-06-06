@@ -455,8 +455,7 @@ let editingEntryId = null;
         const photoDataURLInput = document.getElementById('photoDataURL');
         const clearPhotoButton = document.getElementById('clear-photo-btn');
         const loadingMessage = document.getElementById('loading-message');
-        let dirHandle = null;
-        const saveStatus = document.getElementById('save-status');
+        // Les variables liées à l'import JSON et au dossier de sauvegarde ont été supprimées car inutiles
 
         // --- CUSTOM PINK MARKER ICON ---
         const pinkDotIcon = L.divIcon({
@@ -541,8 +540,11 @@ let editingEntryId = null;
 
             const espece = document.getElementById('species').value.trim();
             const date = document.getElementById('date').value;
-            const lat = parseFloat(document.getElementById('latitude').value.replace(',', '.'));
-            const lon = parseFloat(document.getElementById('longitude').value.replace(',', '.'));
+            // On récupère la valeur comme string, on remplace la virgule par un point, puis on parse en float
+            const latValue = String(document.getElementById('latitude').value).replace(',', '.');
+            const lonValue = String(document.getElementById('longitude').value).replace(',', '.');
+            const lat = latValue !== '' ? parseFloat(latValue) : '';
+            const lon = lonValue !== '' ? parseFloat(lonValue) : '';
             const notes = document.getElementById('notes').value.trim();
             const id = editingEntryId || Date.now().toString();
             // La photo reste en local pour affichage mais n'est pas envoyée à SheetDB
@@ -615,10 +617,10 @@ let editingEntryId = null;
                 row.insertCell().textContent = entry.date || '';
 
                 // Lat
-                row.insertCell().textContent = (typeof entry.lat === 'number' && !isNaN(entry.lat)) ? entry.lat.toFixed(4) : '';
+                row.insertCell().textContent = (typeof entry.lat === 'number' && !isNaN(entry.lat)) ? entry.lat.toFixed(5) : '';
 
                 // Lon
-                row.insertCell().textContent = (typeof entry.lon === 'number' && !isNaN(entry.lon)) ? entry.lon.toFixed(4) : '';
+                row.insertCell().textContent = (typeof entry.lon === 'number' && !isNaN(entry.lon)) ? entry.lon.toFixed(5) : '';
 
                 // Notes
                 const notesCell = row.insertCell();
@@ -662,7 +664,7 @@ let editingEntryId = null;
             markersLayer.clearLayers();
             orchidData.forEach(entry => {
                 // N'affiche la popup image que si la photo existe localement
-                let popupContent = `<b>${entry.espece || ''}</b><br>${entry.date || ''}<br>Lat: ${(typeof entry.lat === 'number' && !isNaN(entry.lat)) ? entry.lat.toFixed(4) : ''}, Lon: ${(typeof entry.lon === 'number' && !isNaN(entry.lon)) ? entry.lon.toFixed(4) : ''}<br>Notes: ${entry.notes || 'Aucune'}`;
+                let popupContent = `<b>${entry.espece || ''}</b><br>${entry.date || ''}<br>Lat: ${(typeof entry.lat === 'number' && !isNaN(entry.lat)) ? entry.lat.toFixed(5) : ''}, Lon: ${(typeof entry.lon === 'number' && !isNaN(entry.lon)) ? entry.lon.toFixed(5) : ''}<br>Notes: ${entry.notes || 'Aucune'}`;
                 if (entry.photoDataURL) {
                     popupContent += `<br><img src="${entry.photoDataURL}" alt="Photo de ${entry.espece || ''}" class="popup-image">`;
                 }
