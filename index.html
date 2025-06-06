@@ -562,6 +562,7 @@ let editingEntryId = null;
             let photoURL = '';
             if (photoDataURL) {
                 try {
+                    console.log('photoDataURL compressé, taille:', photoDataURL.length, 'caractères ≈', Math.round(photoDataURL.length * 3 / 4 / 1024), 'Ko');
                     console.log('photoDataURL envoyé à Imgur:', photoDataURL.slice(0, 100) + '...');
                     photoURL = await uploadToImgur(photoDataURL);
                 } catch (err) {
