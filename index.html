@@ -475,10 +475,9 @@ let editingEntryId = null;
             if (degrees === undefined || minutes === undefined || seconds === undefined || direction === undefined) {
                 return null;
             }
-            let dd = degrees + minutes / 60 + seconds / (60 * 60);
-            if (direction == "S" || direction == "W") {
-                dd = dd * -1;
-            }
+            let dd = Math.abs(degrees) + minutes / 60 + seconds / 3600;
+            if (direction === "S" || direction === "W") dd = -dd;
+            if (direction === "E" || direction === "N") dd = Math.abs(dd);
             return dd;
         }
 
@@ -506,6 +505,10 @@ let editingEntryId = null;
                     if (latArr && lonArr && latRef && lonRef) {
                         const latitude = convertDMSToDD(latArr[0], latArr[1], latArr[2], latRef);
                         const longitude = convertDMSToDD(lonArr[0], lonArr[1], lonArr[2], lonRef);
+
+                        // LOGS DEBUG : Affiche la valeur brute et la conversion
+                        console.log('EXIF Latitude:', latArr, latRef, '→', latitude);
+                        console.log('EXIF Longitude:', lonArr, lonRef, '→', longitude);
 
                         if (latitude !== null && longitude !== null) {
                             document.getElementById('latitude').value = latitude.toFixed(5);
