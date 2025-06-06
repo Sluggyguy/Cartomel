@@ -304,8 +304,8 @@
         id: row.ID || '',
         espece: row.Espece || '',
         date: row.Date || '',
-        lat: row.Latitude ? parseFloat(String(row.Latitude).replace(',', '.')) : '',
-        lon: row.Longitude ? parseFloat(String(row.Longitude).replace(',', '.')) : '',
+        lat: row.Latitude ? parseFloat(String(row.Latitude).replace(',', '.').trim()) : '',
+        lon: row.Longitude ? parseFloat(String(row.Longitude).replace(',', '.').trim()) : '',
         notes: row.Note || '',
         // La photo n'est plus synchronisée avec SheetDB
       };
@@ -326,6 +326,7 @@
       try {
         const res = await fetch(SHEETDB_API);
         const rows = await res.json();
+        console.log('RAW SheetDB rows:', rows); // LOG valeur brute reçue
         orchidData = rows.map(mapSheetToJS);
         console.log('Données chargées depuis SheetDB:', orchidData);
       } catch (e) {
