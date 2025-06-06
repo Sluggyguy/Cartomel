@@ -300,29 +300,26 @@
 
     // Map JS <-> Sheet colonnes
     function mapSheetToJS(row) {
-  return {
-    id: row.ID || '',
-    nom: row.Nom || '',
-    espece: row.Espece || '',
-    date: row.Date || '',
-    lat: row.Latitude ? parseFloat(row.Latitude) : '',
-    lon: row.Longitude ? parseFloat(row.Longitude) : '',
-    photoDataURL: row.Photo || '',
-    notes: row.Note || ''
-  };
-}
-function mapJSToSheet(entry) {
-  return {
-    ID: entry.id,
-    Nom: entry.nom,
-    Espece: entry.espece,
-    Date: entry.date,
-    Latitude: entry.lat,
-    Longitude: entry.lon,
-    Photo: entry.photoDataURL,
-    Note: entry.notes
-  };
-}
+      return {
+        id: row.ID || '',
+        espece: row.Espece || '',
+        date: row.Date || '',
+        lat: row.Latitude ? parseFloat(row.Latitude) : '',
+        lon: row.Longitude ? parseFloat(row.Longitude) : '',
+        notes: row.Note || '',
+        // La photo n'est plus synchronisée avec SheetDB
+      };
+    }
+    function mapJSToSheet(entry) {
+      return {
+        ID: entry.id,
+        Espece: entry.espece,
+        Date: entry.date,
+        Latitude: entry.lat,
+        Longitude: entry.lon,
+        Note: entry.notes
+      };
+    }
 
     // CRUD SheetDB
     async function loadEntriesFromSheetDB() {
@@ -543,22 +540,21 @@ let editingEntryId = null;
         form.addEventListener('submit', async function(event) {
             event.preventDefault();
 
-            const nom = document.getElementById('nom').value.trim();
-            const espece = document.getElementById('espece').value.trim();
-            let date = document.getElementById('date').value;
-            if (date) date = String(date);
+            const espece = document.getElementById('species').value.trim();
+            const date = document.getElementById('date').value;
             const lat = parseFloat(document.getElementById('latitude').value);
             const lon = parseFloat(document.getElementById('longitude').value);
-            const photoDataURL = document.getElementById('photo').dataset.base64 || '';
-            const notes = document.getElementById('commentaire').value.trim();
+            const notes = document.getElementById('notes').value.trim();
             const id = editingEntryId || Date.now().toString();
+            // La photo reste en local pour affichage mais n'est pas envoyée à SheetDB
+            const photoDataURL = document.getElementById('photoDataURL').value || '';
 
-            if (!nom || !espece || !date || isNaN(lat) || isNaN(lon)) {
+            if (!espece || !date || isNaN(lat) || isNaN(lon)) {
                 alert('Merci de remplir tous les champs obligatoires.');
                 return;
             }
 
-            const entry = { id, nom, espece, date, lat, lon, photoDataURL, notes };
+            const entry = { id, espece, date, lat, lon, notes };
 
             if (editingEntryId) {
                 await updateEntryInSheetDB(entry);
@@ -597,14 +593,14 @@ let editingEntryId = null;
             sortedData.forEach(entry => {
                 const row = entriesTableBody.insertRow();
                 
-                // Photo
+                // Photo (affichée uniquement si présente localement)
                 const photoCell = row.insertCell();
                 if (entry.photoDataURL) {
                     const img = document.createElement('img');
                     img.src = entry.photoDataURL;
                     img.alt = `Photo de ${entry.espece}`;
                     img.classList.add('photo-thumbnail');
-                    img.onclick = () => { // Open full image in new tab or modal
+                    img.onclick = () => {
                         const imageWindow = window.open("", "_blank");
                         imageWindow.document.write(`<img src="${entry.photoDataURL}" style="max-width:100%; max-height:100vh;" alt="Photo de ${entry.espece}">`);
                     };
@@ -666,13 +662,16 @@ let editingEntryId = null;
         function renderMapMarkers() {
             markersLayer.clearLayers();
             orchidData.forEach(entry => {
+                // N'affiche la popup image que si la photo existe localement
                 let popupContent = `<b>${entry.espece || ''}</b><br>${entry.date || ''}<br>Lat: ${(typeof entry.lat === 'number' && !isNaN(entry.lat)) ? entry.lat.toFixed(4) : ''}, Lon: ${(typeof entry.lon === 'number' && !isNaN(entry.lon)) ? entry.lon.toFixed(4) : ''}<br>Notes: ${entry.notes || 'Aucune'}`;
                 if (entry.photoDataURL) {
                     popupContent += `<br><img src="${entry.photoDataURL}" alt="Photo de ${entry.espece || ''}" class="popup-image">`;
                 }
-                const marker = L.marker([entry.lat, entry.lon], { icon: pinkDotIcon })
-                    .addTo(markersLayer)
-                    .bindPopup(popupContent);
+                if (typeof entry.lat === 'number' && !isNaN(entry.lat) && typeof entry.lon === 'number' && !isNaN(entry.lon)) {
+                    L.marker([entry.lat, entry.lon], { icon: pinkDotIcon })
+                        .addTo(markersLayer)
+                        .bindPopup(popupContent);
+                }
             });
         }
 
@@ -683,7 +682,7 @@ let editingEntryId = null;
                 document.getElementById('latitude').value = entry.lat;
                 document.getElementById('longitude').value = entry.lon;
                 document.getElementById('date').value = entry.date;
-                document.getElementById('species').value = entry.species;
+                document.getElementById('species').value = entry.espece;
                 document.getElementById('notes').value = entry.notes;
                 document.getElementById('entry-id').value = entry.id;
                 
