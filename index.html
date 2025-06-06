@@ -556,16 +556,23 @@ let editingEntryId = null;
                 return;
             }
 
-            const entry = { id, espece, date, lat, lon, notes };
+            // Conserve la photo en local dans l'objet entry
+            const entry = { id, espece, date, lat, lon, notes, photoDataURL };
+
+            // Ajout ou modification côté SheetDB (sans la photo)
+            const entryForSheetDB = { id, espece, date, lat, lon, notes };
 
             if (editingEntryId) {
-                await updateEntryInSheetDB(entry);
+                await updateEntryInSheetDB(entryForSheetDB);
+                // Mets à jour la donnée locale avec la photo
+                const idx = orchidData.findIndex(e => e.id === id);
+                if (idx !== -1) orchidData[idx] = entry;
                 editingEntryId = null;
             } else {
-                await addEntryToSheetDB(entry);
+                await addEntryToSheetDB(entryForSheetDB);
+                orchidData.push(entry);
             }
 
-            await loadEntriesFromSheetDB();
             renderTable();
             renderMapMarkers();
             resetPhotoFields();
