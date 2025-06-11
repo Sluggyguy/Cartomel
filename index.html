@@ -330,17 +330,14 @@
         <button class="tab-btn" id="tab-table-btn" onclick="showTab('table')">Tableau des observations</button>
     </div>
     <div id="tab-map" class="tab-content active">
-        <!-- Ici sera affiché le formulaire + la carte (contenu principal existant) -->
         <header>
             <h1>🌷 CartoMel 🌷</h1>
         </header>
-
         <div class="main-container">
             <div id="map-column">
                 <div id="map"></div>
                 <p class="map-instructions">Cliquez sur la carte pour obtenir les coordonnées ou chargez une photo avec GPS.</p>
             </div>
-
             <div id="form-column">
                 <section class="form-section">
                     <h2>Ajouter/Modifier une Observation</h2>
@@ -377,29 +374,32 @@
                         <button type="submit">Sauvegarder l'Observation</button>
                     </form>
                 </section>
-
-                <section class="entries-section">
-                    <h2>Observations Enregistrées</h2>
-                    <div style="overflow-x:auto;"> <!-- For table responsiveness -->
-                        <table id="entries-table">
-                            <thead>
-                                <tr>
-                                    <th>Photo</th>
-                                    <th>Espèce</th>
-                                    <th>Date</th>
-                                    <th>Lat.</th>
-                                    <th>Lon.</th>
-                                    <th>Notes</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <!-- Les données seront insérées ici par JavaScript -->
-                            </tbody>
-                        </table>
-                    </div>
-                </section>
             </div>
+        </div>
+    </div>
+    <div id="tab-table" class="tab-content">
+        <section class="entries-section">
+            <h2>Tableau des observations</h2>
+            <div style="overflow-x:auto;"> <!-- For table responsiveness -->
+                <table id="entries-table">
+                    <thead>
+                        <tr>
+                            <th>Photo</th>
+                            <th>Espèce</th>
+                            <th>Date</th>
+                            <th>Lat.</th>
+                            <th>Lon.</th>
+                            <th>Notes</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Les données seront insérées ici par JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </div>
                             <!-- Les données seront insérées ici par JavaScript -->
                         </tbody>
                     </table>
@@ -418,6 +418,21 @@
      crossorigin=""></script>
 
     <script>
+    // Gestion dynamique des onglets
+    window.showTab = function(tab) {
+        document.getElementById('tab-map').classList.remove('active');
+        document.getElementById('tab-table').classList.remove('active');
+        document.getElementById('tab-map-btn').classList.remove('active');
+        document.getElementById('tab-table-btn').classList.remove('active');
+        if(tab === 'map') {
+            document.getElementById('tab-map').classList.add('active');
+            document.getElementById('tab-map-btn').classList.add('active');
+        } else {
+            document.getElementById('tab-table').classList.add('active');
+            document.getElementById('tab-table-btn').classList.add('active');
+        }
+    }
+
         // --- MAP INITIALIZATION ---
         const map = L.map('map').setView([48.1173, -1.6778], 7); // Rennes, France
         const tileLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
