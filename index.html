@@ -384,6 +384,7 @@
     <div id="tab-table" class="tab-content">
         <section class="entries-section">
             <h2>Tableau des observations</h2>
+            <button id="fill-missing-communes-btn" style="margin-bottom:10px;">Remplir automatiquement les communes manquantes</button>
             <div style="overflow-x:auto;"> <!-- For table responsiveness -->
                 <table id="entries-table">
                     <thead>
@@ -570,6 +571,52 @@ let editingEntryId = null;
         }
 
         // --- EVENT LISTENERS ---
+        // Remplissage automatique des communes manquantes
+        document.getElementById('fill-missing-communes-btn').addEventListener('click', async function() {
+            if (!confirm('Remplir automatiquement toutes les communes manquantes ?')) return;
+            let missing = orchidData.filter(entry => (!entry.commune || entry.commune === ''));
+            if (missing.length === 0) {
+                alert('Aucune observation sans commune.');
+                return;
+            }
+            let progressMsg = document.createElement('div');
+            progressMsg.id = 'commune-progress-msg';
+            progressMsg.style.margin = '10px 0';
+            progressMsg.style.color = '#4A7C59';
+            document.querySelector('.entries-section').prepend(progressMsg);
+            let updated = 0;
+            for (let i = 0; i < missing.length; i++) {
+                const entry = missing[i];
+                progressMsg.textContent = `Traitement ${i+1} / ${missing.length}...`;
+                if (typeof entry.lat === 'number' && typeof entry.lon === 'number' && !isNaN(entry.lat) && !isNaN(entry.lon)) {
+                    let commune = '';
+                    try {
+                        const url = `https://nominatim.openstreetmap.org/reverse?lat=${entry.lat}&lon=${entry.lon}&format=json&accept-language=fr`;
+                        const response = await fetch(url, { headers: { 'User-Agent': 'CartomelApp/1.0 contact@cartomel.local' } });
+                        const data = await response.json();
+                        commune = data && data.address && (data.address.village || data.address.town || data.address.city || data.address.municipality || data.address.county) ?
+                            (data.address.village || data.address.town || data.address.city || data.address.municipality || data.address.county) : '';
+                    } catch (err) { commune = ''; }
+                    if (commune) {
+                        // PATCH la commune dans SheetDB
+                        try {
+                            await fetch(`${SHEETDB_URL}/ID/${entry.id}`, {
+                                method: 'PATCH',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ data: { Commune: commune } })
+                            });
+                            updated++;
+                        } catch (e) {}
+                    }
+                }
+                await new Promise(r => setTimeout(r, 1200)); // Pause pour éviter le flood de Nominatim
+            }
+            progressMsg.textContent = `${updated} commune(s) mises à jour sur ${missing.length}. Rechargement...`;
+            await loadEntriesFromSheetDB();
+            renderTable();
+            renderMapMarkers();
+            setTimeout(() => progressMsg.remove(), 4000);
+        });
         // Mise à jour automatique de la commune lors de la saisie manuelle des coordonnées
         document.getElementById('latitude').addEventListener('change', function() {
             const lat = parseFloat(this.value.replace(',', '.'));
