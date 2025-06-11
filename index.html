@@ -992,19 +992,13 @@ async function loadEntriesFromSheetDB() {
             }
         }
 
-        // --- INITIAL LOAD ---
-        async function initializeApp() {
-            await loadEntriesFromSheetDB();
-            renderTable(filteredData);
-            renderMapMarkers(filteredData);
-            resetPhotoFields(); // Ensure photo fields are clear on initial load
-        }
-
-        document.addEventListener('DOMContentLoaded', initializeApp);
-    // Affichage initial : tout afficher
-    renderTable(filteredData);
-    renderMapMarkers(filteredData);
-
-    </script>
-</body>
-</html>
+        // --- SUPPRESSION D'UNE ENTRÉE DANS SHEETDB ---
+        async function deleteEntryFromSheetDB(id) {
+            try {
+                const response = await fetch(`${SHEETDB_URL}/ID/${encodeURIComponent(id)}`, {
+                    method: 'DELETE',
+                });
+                if (!response.ok) throw new Error('Erreur lors de la suppression dans SheetDB');
+            } catch (err) {
+                alert("Erreur lors de la suppression dans SheetDB : " + err.message);
+          
