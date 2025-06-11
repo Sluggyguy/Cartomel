@@ -1110,13 +1110,37 @@ async function loadEntriesFromSheetDB() {
     }
 }
 
-// Parseur CSV simple adapté à la structure de ta feuille
+// Parseur CSV robuste qui gère les champs entre guillemets, les virgules dans les valeurs et les valeurs négatives
 function parseCSVOrchidData(csvText) {
+    // Parseur CSV minimaliste, gère les champs entre "...", les virgules, les valeurs négatives
+    function parseCSVLine(line) {
+        const result = [];
+        let current = '';
+        let inQuotes = false;
+        for (let i = 0; i < line.length; i++) {
+            const char = line[i];
+            if (char === '"') {
+                if (inQuotes && line[i+1] === '"') { // double quote = "
+                    current += '"';
+                    i++;
+                } else {
+                    inQuotes = !inQuotes;
+                }
+            } else if (char === ',' && !inQuotes) {
+                result.push(current);
+                current = '';
+            } else {
+                current += char;
+            }
+        }
+        result.push(current);
+        return result;
+    }
     const lines = csvText.split(/\r?\n/).filter(l => l.trim().length > 0);
     if (lines.length < 2) return [];
-    const headers = lines[0].split(',');
+    const headers = parseCSVLine(lines[0]);
     return lines.slice(1).map(line => {
-        const cols = line.split(',');
+        const cols = parseCSVLine(line);
         const get = key => {
             const idx = headers.indexOf(key);
             return idx >= 0 ? cols[idx] : '';
