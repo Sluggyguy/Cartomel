@@ -1001,4 +1001,45 @@ async function loadEntriesFromSheetDB() {
                 if (!response.ok) throw new Error('Erreur lors de la suppression dans SheetDB');
             } catch (err) {
                 alert("Erreur lors de la suppression dans SheetDB : " + err.message);
-          
+                throw err;
+            }
+        }
+
+        // --- INITIAL LOAD ---
+        async function initializeApp() {
+            await loadEntriesFromSheetDB();
+            renderTable(filteredData);
+            renderMapMarkers(filteredData);
+            resetPhotoFields(); // Ensure photo fields are clear on initial load
+        }
+
+        document.addEventListener('DOMContentLoaded', initializeApp);
+    // Affichage initial : tout afficher
+    renderTable(filteredData);
+    renderMapMarkers(filteredData);
+
+        // Gestion dynamique des onglets (tabs)
+        window.showTab = function(tab) {
+            document.getElementById('tab-map').classList.remove('active');
+            document.getElementById('tab-table').classList.remove('active');
+            document.getElementById('tab-map-btn').classList.remove('active');
+            document.getElementById('tab-table-btn').classList.remove('active');
+            if(tab === 'map') {
+                document.getElementById('tab-map').classList.add('active');
+                document.getElementById('tab-map-btn').classList.add('active');
+                setTimeout(function() {
+                    if (typeof map !== 'undefined') {
+                        map.invalidateSize();
+                    }
+                }, 150);
+            } else {
+                document.getElementById('tab-table').classList.add('active');
+                document.getElementById('tab-table-btn').classList.add('active');
+                if (typeof renderTable === 'function') {
+                    renderTable();
+                }
+            }
+        }
+    </script>
+</body>
+</html>
