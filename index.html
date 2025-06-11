@@ -1072,6 +1072,10 @@ async function loadEntriesFromSheetDB() {
         const response = await fetch(SHEETDB_URL);
         const data = await response.json();
         console.log("Réponse SheetDB brute :", data);
+        // Si la réponse contient un champ 'error', fallback CSV !
+        if (data.error) {
+            throw new Error('SheetDB error: ' + data.error);
+        }
         // Adapter selon la structure réelle des données reçues
         orchidData = Array.isArray(data) ? data.map(entry => ({
             id: entry.ID,
@@ -1088,9 +1092,49 @@ async function loadEntriesFromSheetDB() {
         console.log("orchidData après parsing :", orchidData);
     } catch (err) {
         console.error("Erreur lors du chargement des données SheetDB :", err);
-        orchidData = [];
+        // --- Fallback CSV Google Sheets en lecture seule ---
+        try {
+            const csvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRt81q8fsx8slp6h8udsLHwB8Yl6nNqjFTX5atXGwDwAZLhejzad3Yrp_SSfy3D553oGFqqR83fyW49/pub?gid=0&single=true&output=csv';
+            const resp = await fetch(csvUrl);
+            if (!resp.ok) throw new Error('Impossible de charger le CSV Google Sheets');
+            const csvText = await resp.text();
+            orchidData = parseCSVOrchidData(csvText);
+            filteredData = orchidData;
+            alert('Limite SheetDB atteinte : données chargées en lecture seule depuis Google Sheets.');
+            console.log('Mode lecture seule : données chargées depuis le CSV Google Sheets.');
+        } catch (csvErr) {
+            alert('Impossible de charger les données depuis SheetDB ni Google Sheets.');
+            orchidData = [];
+            filteredData = [];
+        }
     }
 }
+
+// Parseur CSV simple adapté à la structure de ta feuille
+function parseCSVOrchidData(csvText) {
+    const lines = csvText.split(/\r?\n/).filter(l => l.trim().length > 0);
+    if (lines.length < 2) return [];
+    const headers = lines[0].split(',');
+    return lines.slice(1).map(line => {
+        const cols = line.split(',');
+        const get = key => {
+            const idx = headers.indexOf(key);
+            return idx >= 0 ? cols[idx] : '';
+        };
+        return {
+            id: get('ID'),
+            espece: get('Espece'),
+            date: get('Date'),
+            lat: get('Latitude') ? parseFloat(get('Latitude').replace(',', '.')) : undefined,
+            lon: get('Longitude') ? parseFloat(get('Longitude').replace(',', '.')) : undefined,
+            commune: get('Commune'),
+            Commune: get('Commune'),
+            notes: get('Note'),
+            photoURL: get('PhotoURL')
+        };
+    });
+}
+
 
         // --- AJOUT DE DONNÉES DANS SHEETDB ---
         async function addEntryToSheetDB(entry) {
