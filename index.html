@@ -574,7 +574,7 @@ let editingEntryId = null;
         // Remplissage automatique des communes manquantes
         document.getElementById('fill-missing-communes-btn').addEventListener('click', async function() {
             if (!confirm('Remplir automatiquement toutes les communes manquantes ?')) return;
-            let missing = orchidData.filter(entry => (!entry.commune || entry.commune === ''));
+            let missing = orchidData.filter(entry => (typeof entry.Commune === 'undefined' || entry.Commune === null || entry.Commune === ''));
             if (missing.length === 0) {
                 alert('Aucune observation sans commune.');
                 return;
@@ -600,13 +600,14 @@ let editingEntryId = null;
                     if (commune) {
                         // PATCH la commune dans SheetDB
                         try {
+                            console.log(`PATCH Commune pour ID=${entry.id} → ${commune}`);
                             await fetch(`${SHEETDB_URL}/ID/${entry.id}`, {
                                 method: 'PATCH',
                                 headers: { 'Content-Type': 'application/json' },
                                 body: JSON.stringify({ data: { Commune: commune } })
                             });
                             updated++;
-                        } catch (e) {}
+                        } catch (e) { console.error('Erreur PATCH commune', e); }
                     }
                 }
                 await new Promise(r => setTimeout(r, 1200)); // Pause pour éviter le flood de Nominatim
@@ -820,7 +821,7 @@ let editingEntryId = null;
                 row.insertCell().textContent = (typeof entry.lon === 'number' && !isNaN(entry.lon)) ? entry.lon.toFixed(5) : '';
 
                 // Commune
-                row.insertCell().textContent = entry.commune || '';
+                row.insertCell().textContent = entry.Commune || entry.commune || '';
 
                 // Notes
                 const notesCell = row.insertCell();
@@ -919,7 +920,8 @@ async function loadEntriesFromSheetDB() {
             date: entry.Date,
             lat: entry.Latitude ? parseFloat(String(entry.Latitude).replace(',', '.')) : undefined,
             lon: entry.Longitude ? parseFloat(String(entry.Longitude).replace(',', '.')) : undefined,
-            commune: entry.Commune,
+            commune: (typeof entry.Commune !== 'undefined' ? entry.Commune : ''),
+            Commune: (typeof entry.Commune !== 'undefined' ? entry.Commune : ''),
             notes: entry.Notes,
             photoURL: entry.PhotoURL
         })) : [];
