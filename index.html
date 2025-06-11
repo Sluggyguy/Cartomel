@@ -868,7 +868,7 @@ function renderMapMarkers(data) {
             markersLayer.clearLayers();
             data.forEach(entry => {
                 // N'affiche la popup image que si la photo existe localement
-                let popupContent = `<b>${entry.espece || ''}</b><br>${formatDateFR(entry.date) || ''}<br>Lat: ${(typeof entry.lat === 'number' && !isNaN(entry.lat)) ? entry.lat.toFixed(5) : ''}, Lon: ${(typeof entry.lon === 'number' && !isNaN(entry.lon)) ? entry.lon.toFixed(5) : ''}<br>Notes: ${entry.notes || 'Aucune'}`;
+                let popupContent = `<b>${entry.espece || ''}</b><br><span style='color:#b03a7a;font-weight:bold;'>${entry.commune || entry.Commune || 'Commune inconnue'}</span><br>${formatDateFR(entry.date) || ''}<br>Lat: ${(typeof entry.lat === 'number' && !isNaN(entry.lat)) ? entry.lat.toFixed(5) : ''}, Lon: ${(typeof entry.lon === 'number' && !isNaN(entry.lon)) ? entry.lon.toFixed(5) : ''}<br>Notes: ${entry.notes || 'Aucune'}`;
                 if (entry.photoURL) {
                     popupContent += `<br><img src=\"${entry.photoURL}\" alt=\"Photo de ${entry.espece || ''}\" class=\"popup-image\">`;
                 }
