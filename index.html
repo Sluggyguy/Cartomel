@@ -467,6 +467,30 @@ let editingEntryId = null;
         const form = document.getElementById('orchid-form');
         const communeInput = document.getElementById('commune');
 
+        // Gestion dynamique des onglets (tabs)
+        window.showTab = function(tab) {
+            document.getElementById('tab-map').classList.remove('active');
+            document.getElementById('tab-table').classList.remove('active');
+            document.getElementById('tab-map-btn').classList.remove('active');
+            document.getElementById('tab-table-btn').classList.remove('active');
+            if(tab === 'map') {
+                document.getElementById('tab-map').classList.add('active');
+                document.getElementById('tab-map-btn').classList.add('active');
+                setTimeout(function() {
+                    if (typeof map !== 'undefined') {
+                        map.invalidateSize();
+                    }
+                }, 150);
+            } else {
+                document.getElementById('tab-table').classList.add('active');
+                document.getElementById('tab-table-btn').classList.add('active');
+                if (typeof renderTable === 'function') {
+                    renderTable();
+                }
+            }
+        }
+
+
         // Fonction pour remplir automatiquement la commune en fonction des coordonnées GPS
         async function updateCommuneField(lat, lon) {
             if (!lat || !lon || isNaN(lat) || isNaN(lon)) {
@@ -1091,28 +1115,7 @@ async function loadEntriesFromSheetDB() {
     renderTable(filteredData);
     renderMapMarkers(filteredData);
 
-        // Gestion dynamique des onglets (tabs)
-        window.showTab = function(tab) {
-            document.getElementById('tab-map').classList.remove('active');
-            document.getElementById('tab-table').classList.remove('active');
-            document.getElementById('tab-map-btn').classList.remove('active');
-            document.getElementById('tab-table-btn').classList.remove('active');
-            if(tab === 'map') {
-                document.getElementById('tab-map').classList.add('active');
-                document.getElementById('tab-map-btn').classList.add('active');
-                setTimeout(function() {
-                    if (typeof map !== 'undefined') {
-                        map.invalidateSize();
-                    }
-                }, 150);
-            } else {
-                document.getElementById('tab-table').classList.add('active');
-                document.getElementById('tab-table-btn').classList.add('active');
-                if (typeof renderTable === 'function') {
-                    renderTable();
-                }
-            }
-        }
+
     </script>
 </body>
-</html>
+</ht
