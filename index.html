@@ -835,7 +835,7 @@ function renderTable(data) {
                 editBtn.textContent = '✏️';
                 editBtn.title = 'Modifier';
                 editBtn.classList.add('edit-btn');
-                editBtn.onclick = () => loadEntryForEdit(entry.id);
+                editBtn.onclick = () => { showTab('map'); loadEntryForEdit(entry.id); };
                 actionsCell.appendChild(editBtn);
 
                 const deleteBtn = document.createElement('button');
