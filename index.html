@@ -816,13 +816,13 @@ async function loadEntriesFromSheetDB() {
         console.log("Réponse SheetDB brute :", data);
         // Adapter selon la structure réelle des données reçues
         orchidData = Array.isArray(data) ? data.map(entry => ({
-            id: entry.id,
-            espece: entry.espece,
-            date: entry.date,
-            lat: parseFloat(entry.lat),
-            lon: parseFloat(entry.lon),
-            notes: entry.notes,
-            photoURL: entry.photoURL
+            id: entry.ID,
+            espece: entry.Espece,
+            date: entry.Date,
+            lat: entry.Latitude ? parseFloat(String(entry.Latitude).replace(',', '.')) : undefined,
+            lon: entry.Longitude ? parseFloat(String(entry.Longitude).replace(',', '.')) : undefined,
+            notes: entry.Notes,
+            photoURL: entry.PhotoURL
         })) : [];
         console.log("orchidData après parsing :", orchidData);
     } catch (err) {
