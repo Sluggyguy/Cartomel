@@ -553,9 +553,10 @@ let editingEntryId = null;
                 }
                 reader.readAsDataURL(file);
 
-                if (!editingEntryId) {
-                    console.log('[PHOTO] Mode AJOUT : extraction GPS activée');
-                    EXIF.getData(file, function() {
+                if (editingEntryId === null || editingEntryId === undefined || editingEntryId === '') {
+            // AJOUT : Extraction GPS autorisée
+            console.log('[PHOTO] Mode AJOUT : extraction GPS activée');
+            EXIF.getData(file, function() {
                         loadingMessage.style.display = 'none';
                         const latArr = EXIF.getTag(this, "GPSLatitude");
                         const lonArr = EXIF.getTag(this, "GPSLongitude");
@@ -582,10 +583,11 @@ let editingEntryId = null;
                         }
                     });
                 } else {
-                    console.log('[PHOTO] Mode EDITION : extraction GPS désactivée, aucune modification des coordonnées.');
-                    loadingMessage.style.display = 'none';
-                }
-            } else {
+            // EDITION : Extraction GPS INTERDITE
+            console.log('[PHOTO] Mode EDITION : extraction GPS désactivée, aucune modification des coordonnées.', editingEntryId);
+            loadingMessage.style.display = 'none';
+        }
+    } else {
                  resetPhotoFields();
             }
         });
@@ -1144,11 +1146,4 @@ async function loadEntriesFromSheetDB() {
         }
 
         document.addEventListener('DOMContentLoaded', initializeApp);
-    // Affichage initial : tout afficher
-    renderTable(filteredData);
-    renderMapMarkers(filteredData);
-
-
-    </script>
-</body>
-</html>
+    // A
