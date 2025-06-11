@@ -936,6 +936,62 @@ async function loadEntriesFromSheetDB() {
     }
 }
 
+        // --- AJOUT DE DONNÉES DANS SHEETDB ---
+        async function addEntryToSheetDB(entry) {
+            // SheetDB attend des champs avec la casse exacte de la feuille Google Sheets
+            const payload = {
+                ID: entry.id,
+                Espece: entry.espece,
+                Date: entry.date,
+                Latitude: entry.lat,
+                Longitude: entry.lon,
+                Commune: entry.commune,
+                Note: entry.notes,
+                PhotoURL: entry.photoURL
+            };
+            try {
+                const response = await fetch(SHEETDB_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ data: [payload] })
+                });
+                if (!response.ok) throw new Error('Erreur lors de l’ajout dans SheetDB');
+            } catch (err) {
+                alert("Erreur lors de l'enregistrement dans SheetDB : " + err.message);
+                throw err;
+            }
+        }
+
+        // --- MISE À JOUR D'UNE ENTRÉE DANS SHEETDB ---
+        async function updateEntryInSheetDB(entry) {
+            // SheetDB met à jour via PATCH sur /search
+            const payload = {
+                ID: entry.id,
+                Espece: entry.espece,
+                Date: entry.date,
+                Latitude: entry.lat,
+                Longitude: entry.lon,
+                Commune: entry.commune,
+                Note: entry.notes,
+                PhotoURL: entry.photoURL
+            };
+            try {
+                const response = await fetch(`${SHEETDB_URL}/ID/${encodeURIComponent(entry.id)}`, {
+                    method: 'PATCH',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ data: payload })
+                });
+                if (!response.ok) throw new Error('Erreur lors de la mise à jour dans SheetDB');
+            } catch (err) {
+                alert("Erreur lors de la mise à jour dans SheetDB : " + err.message);
+                throw err;
+            }
+        }
+
         // --- INITIAL LOAD ---
         async function initializeApp() {
             await loadEntriesFromSheetDB();
