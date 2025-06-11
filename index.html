@@ -770,20 +770,20 @@ let filteredData = undefined;
 function renderTable(data) {
     data = data || filteredData || orchidData;
 
-            entriesTableBody.innerHTML = '';
+    entriesTableBody.innerHTML = '';
 
-            if (orchidData.length === 0) {
-                const row = entriesTableBody.insertRow();
-                row.classList.add('no-entries-message');
-                const cell = row.insertCell();
-                cell.colSpan = 7; // Adjusted colspan for new Photo column
-                cell.textContent = "Aucune observation enregistrée pour le moment.";
-                return;
-            }
-            
-            const sortedData = [...orchidData].sort((a,b) => new Date(b.date) - new Date(a.date));
+    if (!data || data.length === 0) {
+        const row = entriesTableBody.insertRow();
+        row.classList.add('no-entries-message');
+        const cell = row.insertCell();
+        cell.colSpan = 8; // 8 colonnes avec Photo et Actions
+        cell.textContent = "Aucune observation enregistrée pour le moment.";
+        return;
+    }
+    
+    const sortedData = [...data].sort((a,b) => new Date(b.date) - new Date(a.date));
 
-            sortedData.forEach(entry => {
+    sortedData.forEach(entry => {
                 const row = entriesTableBody.insertRow();
                 
                 // Photo miniature depuis l'URL Imgur si présente
@@ -866,16 +866,15 @@ function renderMapMarkers(data) {
     data = data || filteredData || orchidData;
 
             markersLayer.clearLayers();
-            orchidData.forEach(entry => {
+            data.forEach(entry => {
                 // N'affiche la popup image que si la photo existe localement
                 let popupContent = `<b>${entry.espece || ''}</b><br>${formatDateFR(entry.date) || ''}<br>Lat: ${(typeof entry.lat === 'number' && !isNaN(entry.lat)) ? entry.lat.toFixed(5) : ''}, Lon: ${(typeof entry.lon === 'number' && !isNaN(entry.lon)) ? entry.lon.toFixed(5) : ''}<br>Notes: ${entry.notes || 'Aucune'}`;
                 if (entry.photoURL) {
                     popupContent += `<br><img src=\"${entry.photoURL}\" alt=\"Photo de ${entry.espece || ''}\" class=\"popup-image\">`;
                 }
-                if (typeof entry.lat === 'number' && !isNaN(entry.lat) && typeof entry.lon === 'number' && !isNaN(entry.lon)) {
-                    L.marker([entry.lat, entry.lon], { icon: pinkDotIcon })
-                        .addTo(markersLayer)
-                        .bindPopup(popupContent);
+                if (typeof entry.lat === 'number' && typeof entry.lon === 'number' && !isNaN(entry.lat) && !isNaN(entry.lon)) {
+                    const marker = L.marker([entry.lat, entry.lon], { icon: orchidIcon }).addTo(markersLayer);
+                    marker.bindPopup(popupContent);
                 }
             });
         }
