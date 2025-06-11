@@ -703,6 +703,8 @@ document.getElementById('latitude').addEventListener('change', function() {
     const lon = parseFloat(document.getElementById('longitude').value.replace(',', '.'));
     if (!isNaN(lat) && !isNaN(lon)) {
         updateCommuneField(lat, lon);
+    } else {
+        // Ne rien faire : ne jamais vider commune automatiquement
     }
 });
 document.getElementById('longitude').addEventListener('change', function() {
@@ -710,6 +712,8 @@ document.getElementById('longitude').addEventListener('change', function() {
     const lon = parseFloat(this.value.replace(',', '.'));
     if (!isNaN(lat) && !isNaN(lon)) {
         updateCommuneField(lat, lon);
+    } else {
+        // Ne rien faire : ne jamais vider commune automatiquement
     }
 });
 form.addEventListener('submit', async function(event) {
@@ -971,40 +975,40 @@ function renderMapMarkers(data) {
 
         // --- EDIT AND DELETE FUNCTIONS ---
         function loadEntryForEdit(id) {
-            const entry = orchidData.find(e => e.id === id);
-            if (entry) {
-                document.getElementById('latitude').value = entry.lat;
-                document.getElementById('longitude').value = entry.lon;
-                document.getElementById('date').value = entry.date;
-                document.getElementById('species').value = entry.espece;
-                document.getElementById('notes').value = entry.notes;
-                document.getElementById('entry-id').value = entry.id;
-                document.getElementById('commune').value = entry.commune || '';
-                // Afficher la photo d'origine si présente
-                if (entry.photoDataURL) {
-                    photoPreview.src = entry.photoDataURL;
-                    photoPreview.style.display = 'block';
-                    photoDataURLInput.value = entry.photoDataURL;
-                    clearPhotoButton.style.display = 'inline-block';
-                    window.photoDataURL = entry.photoDataURL;
-                    window.photoDeleted = false;
-                } else if (entry.photoURL) {
-                    photoPreview.src = entry.photoURL;
-                    photoPreview.style.display = 'block';
-                    photoDataURLInput.value = '';
-                    clearPhotoButton.style.display = 'inline-block';
-                    window.photoDataURL = '';
-                    window.photoDeleted = false;
-                } else {
-                    resetPhotoFields();
-                    window.photoDataURL = '';
-                    window.photoDeleted = false;
-                }
-                form.querySelector('button[type="submit"]').textContent = 'Modifier l\'Observation';
-                editingEntryId = entry.id;
-                form.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            }
+    const entry = orchidData.find(e => e.id === id);
+    if (entry) {
+        document.getElementById('latitude').value = entry.lat;
+        document.getElementById('longitude').value = entry.lon;
+        document.getElementById('date').value = entry.date;
+        document.getElementById('species').value = entry.espece;
+        document.getElementById('notes').value = entry.notes;
+        document.getElementById('entry-id').value = entry.id;
+        document.getElementById('commune').value = entry.commune || entry.Commune || '';
+        // Afficher la photo d'origine si présente
+        if (entry.photoDataURL) {
+            photoPreview.src = entry.photoDataURL;
+            photoPreview.style.display = 'block';
+            photoDataURLInput.value = entry.photoDataURL;
+            clearPhotoButton.style.display = 'inline-block';
+            window.photoDataURL = entry.photoDataURL;
+            window.photoDeleted = false;
+        } else if (entry.photoURL) {
+            photoPreview.src = entry.photoURL;
+            photoPreview.style.display = 'block';
+            photoDataURLInput.value = '';
+            clearPhotoButton.style.display = 'inline-block';
+            window.photoDataURL = '';
+            window.photoDeleted = false;
+        } else {
+            resetPhotoFields();
+            window.photoDataURL = '';
+            window.photoDeleted = false;
         }
+        form.querySelector('button[type="submit"]').textContent = 'Modifier l\'Observation';
+        editingEntryId = entry.id;
+        form.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+}
 
         // --- CHARGEMENT DES DONNÉES DEPUIS SHEETDB ---
 const SHEETDB_URL = 'https://sheetdb.io/api/v1/lu6n1v2eknitd'; // URL SheetDB de l'utilisateur
