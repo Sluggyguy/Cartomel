@@ -622,20 +622,7 @@ let editingEntryId = null;
                 updateCommuneField(lat, lon);
             }
         });
-        form.addEventListener('submit', async function(event) {
-            event.preventDefault();
 
-            const espece = document.getElementById('species').value.trim();
-            const date = document.getElementById('date').value;
-                }
-            } else {
-                alert("Aucune donnée GPS trouvée dans cette image. Veuillez les entrer manuellement ou cliquer sur la carte.");
-            }
-        });
-    } else {
-         resetPhotoFields();
-    }
-});
         
 clearPhotoButton.addEventListener('click', function() {
     resetPhotoFields();
@@ -1121,4 +1108,11 @@ async function loadEntriesFromSheetDB() {
             } else {
                 document.getElementById('tab-table').classList.add('active');
                 document.getElementById('tab-table-btn').classList.add('active');
-                if (typeof 
+                if (typeof renderTable === 'function') {
+                    renderTable();
+                }
+            }
+        }
+    </script>
+</body>
+</html>
