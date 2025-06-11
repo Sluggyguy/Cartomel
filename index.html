@@ -812,7 +812,7 @@ let editingEntryId = null;
                 row.insertCell().textContent = entry.espece || '';
 
                 // Date
-                row.insertCell().textContent = entry.date || '';
+                row.insertCell().textContent = formatDateFR(entry.date) || '';
 
                 // Lat
                 row.insertCell().textContent = (typeof entry.lat === 'number' && !isNaN(entry.lat)) ? entry.lat.toFixed(5) : '';
@@ -865,7 +865,7 @@ let editingEntryId = null;
             markersLayer.clearLayers();
             orchidData.forEach(entry => {
                 // N'affiche la popup image que si la photo existe localement
-                let popupContent = `<b>${entry.espece || ''}</b><br>${entry.date || ''}<br>Lat: ${(typeof entry.lat === 'number' && !isNaN(entry.lat)) ? entry.lat.toFixed(5) : ''}, Lon: ${(typeof entry.lon === 'number' && !isNaN(entry.lon)) ? entry.lon.toFixed(5) : ''}<br>Notes: ${entry.notes || 'Aucune'}`;
+                let popupContent = `<b>${entry.espece || ''}</b><br>${formatDateFR(entry.date) || ''}<br>Lat: ${(typeof entry.lat === 'number' && !isNaN(entry.lat)) ? entry.lat.toFixed(5) : ''}, Lon: ${(typeof entry.lon === 'number' && !isNaN(entry.lon)) ? entry.lon.toFixed(5) : ''}<br>Notes: ${entry.notes || 'Aucune'}`;
                 if (entry.photoURL) {
                     popupContent += `<br><img src=\"${entry.photoURL}\" alt=\"Photo de ${entry.espece || ''}\" class=\"popup-image\">`;
                 }
