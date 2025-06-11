@@ -322,6 +322,30 @@
             display: block;
         }
     </style>
+    <script>
+    // Gestion dynamique des onglets (tabs) - doit être défini AVANT tout appel onclick
+    window.showTab = function(tab) {
+        document.getElementById('tab-map').classList.remove('active');
+        document.getElementById('tab-table').classList.remove('active');
+        document.getElementById('tab-map-btn').classList.remove('active');
+        document.getElementById('tab-table-btn').classList.remove('active');
+        if(tab === 'map') {
+            document.getElementById('tab-map').classList.add('active');
+            document.getElementById('tab-map-btn').classList.add('active');
+            setTimeout(function() {
+                if (typeof map !== 'undefined') {
+                    map.invalidateSize();
+                }
+            }, 150);
+        } else {
+            document.getElementById('tab-table').classList.add('active');
+            document.getElementById('tab-table-btn').classList.add('active');
+            if (typeof renderTable === 'function') {
+                renderTable();
+            }
+        }
+    }
+    </script>
 </head>
 <body>
     <!-- Onglets navigation -->
@@ -1146,4 +1170,11 @@ async function loadEntriesFromSheetDB() {
         }
 
         document.addEventListener('DOMContentLoaded', initializeApp);
-    // A
+    // Affichage initial : tout afficher
+    renderTable(filteredData);
+    renderMapMarkers(filteredData);
+
+
+    </script>
+</body>
+</html>
