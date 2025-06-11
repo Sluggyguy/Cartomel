@@ -553,8 +553,8 @@ let editingEntryId = null;
                 }
                 reader.readAsDataURL(file);
 
-                // Extraction GPS UNIQUEMENT en mode ajout (pas en édition)
                 if (!editingEntryId) {
+                    console.log('[PHOTO] Mode AJOUT : extraction GPS activée');
                     EXIF.getData(file, function() {
                         loadingMessage.style.display = 'none';
                         const latArr = EXIF.getTag(this, "GPSLatitude");
@@ -566,7 +566,6 @@ let editingEntryId = null;
                             const latitude = convertDMSToDD(latArr[0], latArr[1], latArr[2], latRef);
                             const longitude = convertDMSToDD(lonArr[0], lonArr[1], lonArr[2], lonRef);
 
-                            // LOGS DEBUG : Affiche la valeur brute et la conversion
                             console.log('EXIF Latitude:', latArr, latRef, '→', latitude);
                             console.log('EXIF Longitude:', lonArr, lonRef, '→', longitude);
 
@@ -583,6 +582,7 @@ let editingEntryId = null;
                         }
                     });
                 } else {
+                    console.log('[PHOTO] Mode EDITION : extraction GPS désactivée, aucune modification des coordonnées.');
                     loadingMessage.style.display = 'none';
                 }
             } else {
