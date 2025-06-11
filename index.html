@@ -291,135 +291,115 @@
                 font-size: 0.85em;
             }
         }
+
+        /* Tabs */
+        .tabs-container {
+            display: flex;
+            border-bottom: 2px solid #ddd;
+            margin-bottom: 1.5em;
+            background: #fafbfc;
+        }
+        .tab-btn {
+            padding: 12px 28px;
+            border: none;
+            background: none;
+            font-size: 1.1em;
+            cursor: pointer;
+            outline: none;
+            border-bottom: 3px solid transparent;
+            transition: border-color 0.2s, background 0.2s;
+        }
+        .tab-btn.active {
+            border-bottom: 3px solid #5cb85c;
+            background: #f0f8f0;
+            color: #333;
+            font-weight: bold;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
     </style>
 </head>
 <body>
-    <!-- SheetDB API integration -->
-    <script>
-    const SHEETDB_API = 'https://sheetdb.io/api/v1/lu6n1v2eknitd';
+    <!-- Onglets navigation -->
+    <div class="tabs-container">
+        <button class="tab-btn active" id="tab-map-btn" onclick="showTab('map')">Carte & Ajout</button>
+        <button class="tab-btn" id="tab-table-btn" onclick="showTab('table')">Tableau des observations</button>
+    </div>
+    <div id="tab-map" class="tab-content active">
+        <!-- Ici sera affiché le formulaire + la carte (contenu principal existant) -->
+        <header>
+            <h1>🌷 CartoMel 🌷</h1>
+        </header>
 
-    // Map JS <-> Sheet colonnes
-    function mapSheetToJS(row) {
-      return {
-        id: row.ID || '',
-        espece: row.Espece || '',
-        date: row.Date || '',
-        lat: row.Latitude ? parseFloat(String(row.Latitude).replace(',', '.').trim()) : '',
-        lon: row.Longitude ? parseFloat(String(row.Longitude).replace(',', '.').trim()) : '',
-        notes: row.Note || '',
-        photoURL: row.PhotoURL || '',
-      };
-    }
-    function mapJSToSheet(entry) {
-      return {
-        ID: entry.id,
-        Espece: entry.espece,
-        Date: entry.date,
-        Latitude: entry.lat,
-        Longitude: entry.lon,
-        Note: entry.notes,
-        PhotoURL: entry.photoURL || ''
-      };
-    }
+        <div class="main-container">
+            <div id="map-column">
+                <div id="map"></div>
+                <p class="map-instructions">Cliquez sur la carte pour obtenir les coordonnées ou chargez une photo avec GPS.</p>
+            </div>
 
-    // CRUD SheetDB
-    async function loadEntriesFromSheetDB() {
-      try {
-        const res = await fetch(SHEETDB_API);
-        const rows = await res.json();
-        console.log('RAW SheetDB rows:', rows); // LOG valeur brute reçue
-        orchidData = rows.map(mapSheetToJS);
-        console.log('Données chargées depuis SheetDB:', orchidData);
-      } catch (e) {
-        alert('Erreur de chargement SheetDB: ' + e.message);
-        orchidData = [];
-      }
-    }
-    async function addEntryToSheetDB(entry) {
-      const res = await fetch(SHEETDB_API, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ data: [mapJSToSheet(entry)] })
-      });
-      return res.ok;
-    }
-    async function updateEntryInSheetDB(entry) {
-      // SheetDB PUT by ID (clé primaire)
-      const res = await fetch(`${SHEETDB_API}/ID/${entry.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ data: mapJSToSheet(entry) })
-      });
-      return res.ok;
-    }
-    async function deleteEntryFromSheetDB(id) {
-      const res = await fetch(`${SHEETDB_API}/ID/${id}`, { method: 'DELETE' });
-      return res.ok;
-    }
-    </script>
-    <header>
-        <h1>🌷 CartoMel 🌷</h1>
-    </header>
+            <div id="form-column">
+                <section class="form-section">
+                    <h2>Ajouter/Modifier une Observation</h2>
+                    <form id="orchid-form">
+                        <div>
+                            <label for="photoFile">Photo (JPEG/PNG, optionnel):</label>
+                            <input type="file" id="photoFile" name="photoFile" accept="image/jpeg, image/png">
+                            <img id="photo-preview" src="#" alt="Aperçu photo"/>
+                            <button type="button" id="clear-photo-btn">Retirer la photo</button>
+                            <p id="loading-message">Extraction des données GPS...</p>
+                        </div>
+                        <div>
+                            <label for="latitude">Latitude:</label>
+                            <input type="text" id="latitude" name="latitude" required placeholder="Ex: 48.1173">
+                        </div>
+                        <div>
+                            <label for="longitude">Longitude:</label>
+                            <input type="text" id="longitude" name="longitude" required placeholder="Ex: -1.6778">
+                        </div>
+                        <div>
+                            <label for="date">Date:</label>
+                            <input type="date" id="date" name="date" required>
+                        </div>
+                        <div>
+                            <label for="species">Espèce:</label>
+                            <input type="text" id="species" name="species" required placeholder="Nom de l'orchidée">
+                        </div>
+                        <div>
+                            <label for="notes">Notes (optionnel):</label>
+                            <textarea id="notes" name="notes" placeholder="Détails supplémentaires..."></textarea>
+                        </div>
+                        <input type="hidden" id="entry-id"> <!-- For editing -->
+                        <input type="hidden" id="photoDataURL"> <!-- To store photo data URL -->
+                        <button type="submit">Sauvegarder l'Observation</button>
+                    </form>
+                </section>
 
-    <div class="main-container">
-        <div id="map-column">
-            <div id="map"></div>
-            <p class="map-instructions">Cliquez sur la carte pour obtenir les coordonnées ou chargez une photo avec GPS.</p>
-        </div>
-
-        <div id="form-column">
-            <section class="form-section">
-                <h2>Ajouter/Modifier une Observation</h2>
-                <form id="orchid-form">
-                    <div>
-                        <label for="photoFile">Photo (JPEG/PNG, optionnel):</label>
-                        <input type="file" id="photoFile" name="photoFile" accept="image/jpeg, image/png">
-                        <img id="photo-preview" src="#" alt="Aperçu photo"/>
-                        <button type="button" id="clear-photo-btn">Retirer la photo</button>
-                        <p id="loading-message">Extraction des données GPS...</p>
+                <section class="entries-section">
+                    <h2>Observations Enregistrées</h2>
+                    <div style="overflow-x:auto;"> <!-- For table responsiveness -->
+                        <table id="entries-table">
+                            <thead>
+                                <tr>
+                                    <th>Photo</th>
+                                    <th>Espèce</th>
+                                    <th>Date</th>
+                                    <th>Lat.</th>
+                                    <th>Lon.</th>
+                                    <th>Notes</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Les données seront insérées ici par JavaScript -->
+                            </tbody>
+                        </table>
                     </div>
-                    <div>
-                        <label for="latitude">Latitude:</label>
-                        <input type="text" id="latitude" name="latitude" required placeholder="Ex: 48.1173">
-                    </div>
-                    <div>
-                        <label for="longitude">Longitude:</label>
-                        <input type="text" id="longitude" name="longitude" required placeholder="Ex: -1.6778">
-                    </div>
-                    <div>
-                        <label for="date">Date:</label>
-                        <input type="date" id="date" name="date" required>
-                    </div>
-                    <div>
-                        <label for="species">Espèce:</label>
-                        <input type="text" id="species" name="species" required placeholder="Nom de l'orchidée">
-                    </div>
-                    <div>
-                        <label for="notes">Notes (optionnel):</label>
-                        <textarea id="notes" name="notes" placeholder="Détails supplémentaires..."></textarea>
-                    </div>
-                    <input type="hidden" id="entry-id"> <!-- For editing -->
-                    <input type="hidden" id="photoDataURL"> <!-- To store photo data URL -->
-                    <button type="submit">Sauvegarder l'Observation</button>
-                </form>
-            </section>
-
-            <section class="entries-section">
-                <h2>Observations Enregistrées</h2>
-                <div style="overflow-x:auto;"> <!-- For table responsiveness -->
-                    <table id="entries-table">
-                        <thead>
-                            <tr>
-                                <th>Photo</th>
-                                <th>Espèce</th>
-                                <th>Date</th>
-                                <th>Lat.</th>
-                                <th>Lon.</th>
-                                <th>Notes</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
+                </section>
+            </div>
                             <!-- Les données seront insérées ici par JavaScript -->
                         </tbody>
                     </table>
