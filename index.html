@@ -384,6 +384,7 @@
     <div id="tab-table" class="tab-content">
         <section class="entries-section">
             <h2>Tableau des observations</h2>
+            <input type="text" id="search-table" placeholder="Rechercher..." style="margin-bottom:10px;width:300px;max-width:100%">
             <div style="overflow-x:auto;"> <!-- For table responsiveness -->
                 <table id="entries-table">
                     <thead>
@@ -570,6 +571,28 @@ let editingEntryId = null;
         }
 
         // --- EVENT LISTENERS ---
+        // Recherche dans le tableau et sur la carte
+        document.getElementById('search-table').addEventListener('input', function() {
+            const query = this.value.trim().toLowerCase();
+            if (!query) {
+                filteredData = orchidData;
+            } else {
+                filteredData = orchidData.filter(entry => {
+                    return (
+                        (entry.espece && entry.espece.toLowerCase().includes(query)) ||
+                        (entry.Commune && entry.Commune.toLowerCase().includes(query)) ||
+                        (entry.commune && entry.commune.toLowerCase().includes(query)) ||
+                        (entry.notes && entry.notes.toLowerCase().includes(query)) ||
+                        (entry.date && formatDateFR(entry.date).includes(query)) ||
+                        (entry.lat && String(entry.lat).includes(query)) ||
+                        (entry.lon && String(entry.lon).includes(query))
+                    );
+                });
+            }
+            renderTable(filteredData);
+            renderMapMarkers(filteredData);
+        });
+
         // Mise à jour automatique de la commune lors de la saisie manuelle des coordonnées
         document.getElementById('latitude').addEventListener('change', function() {
             const lat = parseFloat(this.value.replace(',', '.'));
@@ -727,7 +750,12 @@ let editingEntryId = null;
         });
 
         // --- TABLE RENDERING ---
-        function renderTable() {
+        // Permet de filtrer les données affichées
+let filteredData = undefined;
+
+function renderTable(data) {
+    data = data || filteredData || orchidData;
+
             entriesTableBody.innerHTML = '';
 
             if (orchidData.length === 0) {
@@ -820,7 +848,9 @@ let editingEntryId = null;
     return dateStr;
 }
 
-function renderMapMarkers() {
+function renderMapMarkers(data) {
+    data = data || filteredData || orchidData;
+
             markersLayer.clearLayers();
             orchidData.forEach(entry => {
                 // N'affiche la popup image que si la photo existe localement
