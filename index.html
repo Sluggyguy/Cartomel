@@ -919,7 +919,7 @@ async function loadEntriesFromSheetDB() {
         // Adapter selon la structure réelle des données reçues
         orchidData = Array.isArray(data) ? data.map(entry => ({
             id: entry.ID,
-            espece: entry.Esperce,
+            espece: entry.Espece,
             date: entry.Date,
             lat: entry.Latitude ? parseFloat(String(entry.Latitude).replace(',', '.')) : undefined,
             lon: entry.Longitude ? parseFloat(String(entry.Longitude).replace(',', '.')) : undefined,
