@@ -807,6 +807,30 @@ let editingEntryId = null;
             }
         }
 
+        // --- CHARGEMENT DES DONNÉES DEPUIS SHEETDB ---
+async function loadEntriesFromSheetDB() {
+    const SHEETDB_URL = 'https://sheetdb.io/api/v1/lu6n1v2eknitd'; // URL SheetDB de l'utilisateur
+    try {
+        const response = await fetch(SHEETDB_URL);
+        const data = await response.json();
+        console.log("Réponse SheetDB brute :", data);
+        // Adapter selon la structure réelle des données reçues
+        orchidData = Array.isArray(data) ? data.map(entry => ({
+            id: entry.id,
+            espece: entry.espece,
+            date: entry.date,
+            lat: parseFloat(entry.lat),
+            lon: parseFloat(entry.lon),
+            notes: entry.notes,
+            photoURL: entry.photoURL
+        })) : [];
+        console.log("orchidData après parsing :", orchidData);
+    } catch (err) {
+        console.error("Erreur lors du chargement des données SheetDB :", err);
+        orchidData = [];
+    }
+}
+
         // --- INITIAL LOAD ---
         async function initializeApp() {
             await loadEntriesFromSheetDB();
