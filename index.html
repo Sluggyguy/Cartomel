@@ -650,6 +650,7 @@ let editingEntryId = null;
         
 clearPhotoButton.addEventListener('click', function() {
     resetPhotoFields();
+    window.photoDeleted = true;
 });
 
 function resetPhotoFields() {
@@ -660,6 +661,7 @@ function resetPhotoFields() {
     clearPhotoButton.style.display = 'none';
     loadingMessage.style.display = 'none';
     window.photoDataURL = '';
+    window.photoDeleted = false;
 }
 
 // --- EVENT LISTENERS ---
@@ -715,7 +717,6 @@ form.addEventListener('submit', async function(event) {
 
     const espece = document.getElementById('species').value.trim();
     const date = document.getElementById('date').value;
-    // On récupère la valeur comme string, on remplace la virgule par un point, puis on parse en float
     const latValue = String(document.getElementById('latitude').value).replace(',', '.');
     const lonValue = String(document.getElementById('longitude').value).replace(',', '.');
     const lat = latValue !== '' ? parseFloat(latValue) : '';
@@ -723,8 +724,6 @@ form.addEventListener('submit', async function(event) {
     const commune = document.getElementById('commune').value.trim();
     const notes = document.getElementById('notes').value.trim();
     const id = editingEntryId || Math.random().toString(36).substr(2, 5).toUpperCase();
-    // La photo reste en local pour affichage mais n'est pas envoyée à SheetDB
-    // Utilise la variable globale (mise à jour lors de la sélection du fichier)
     const photoDataURL = window.photoDataURL || '';
 
     if (!espece || !date || isNaN(lat) || isNaN(lon)) {
@@ -732,12 +731,11 @@ form.addEventListener('submit', async function(event) {
         return;
     }
 
-    // Gestion upload automatique sur Imgur
     let photoURL = '';
-    if (photoDataURL) {
+    if (window.photoDeleted) {
+        photoURL = '';
+    } else if (photoDataURL) {
         try {
-            console.log('photoDataURL compressé, taille:', photoDataURL.length, 'caractères ≈', Math.round(photoDataURL.length * 3 / 4 / 1024), 'Ko');
-            console.log('photoDataURL envoyé à Imgur:', photoDataURL.slice(0, 100) + '...');
             photoURL = await uploadToImgur(photoDataURL);
         } catch (err) {
             alert("Erreur d'upload de la photo : " + err.message);
@@ -747,7 +745,6 @@ form.addEventListener('submit', async function(event) {
             return;
         }
     } else {
-        // Si édition et aucune nouvelle photo, on garde l'URL d'origine
         photoURL = (editingEntryId ? (orchidData.find(e => e.id === id)?.photoURL || '') : '');
     }
     const entry = { id, espece, date, lat, lon, notes, photoURL };
@@ -768,6 +765,7 @@ form.addEventListener('submit', async function(event) {
     resetPhotoFields();
     form.reset();
     window.photoDataURL = '';
+    window.photoDeleted = false;
     document.getElementById('photoDataURL').value = '';
 });
 
@@ -982,23 +980,26 @@ function renderMapMarkers(data) {
                 document.getElementById('notes').value = entry.notes;
                 document.getElementById('entry-id').value = entry.id;
                 document.getElementById('commune').value = entry.commune || '';
-                // Ne pas écraser la commune si elle existe déjà
                 // Afficher la photo d'origine si présente
                 if (entry.photoDataURL) {
                     photoPreview.src = entry.photoDataURL;
                     photoPreview.style.display = 'block';
                     photoDataURLInput.value = entry.photoDataURL;
                     clearPhotoButton.style.display = 'inline-block';
+                    window.photoDataURL = entry.photoDataURL;
+                    window.photoDeleted = false;
                 } else if (entry.photoURL) {
-            photoPreview.src = entry.photoURL;
-            photoPreview.style.display = 'block';
-            photoDataURLInput.value = '';
-            clearPhotoButton.style.display = 'inline-block';
-            window.photoDataURL = '';
-        } else {
-            resetPhotoFields();
-            window.photoDataURL = '';
-        }
+                    photoPreview.src = entry.photoURL;
+                    photoPreview.style.display = 'block';
+                    photoDataURLInput.value = '';
+                    clearPhotoButton.style.display = 'inline-block';
+                    window.photoDataURL = '';
+                    window.photoDeleted = false;
+                } else {
+                    resetPhotoFields();
+                    window.photoDataURL = '';
+                    window.photoDeleted = false;
+                }
                 form.querySelector('button[type="submit"]').textContent = 'Modifier l\'Observation';
                 editingEntryId = entry.id;
                 form.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -1118,4 +1119,4 @@ async function loadEntriesFromSheetDB() {
 
     </script>
 </body>
-</ht
+</html>
