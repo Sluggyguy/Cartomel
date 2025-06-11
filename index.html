@@ -873,7 +873,7 @@ function renderMapMarkers(data) {
                     popupContent += `<br><img src=\"${entry.photoURL}\" alt=\"Photo de ${entry.espece || ''}\" class=\"popup-image\">`;
                 }
                 if (typeof entry.lat === 'number' && typeof entry.lon === 'number' && !isNaN(entry.lat) && !isNaN(entry.lon)) {
-                    const marker = L.marker([entry.lat, entry.lon], { icon: orchidIcon }).addTo(markersLayer);
+                    const marker = L.marker([entry.lat, entry.lon], { icon: pinkDotIcon }).addTo(markersLayer);
                     marker.bindPopup(popupContent);
                 }
             });
