@@ -907,8 +907,9 @@ let editingEntryId = null;
         }
 
         // --- CHARGEMENT DES DONNÉES DEPUIS SHEETDB ---
+const SHEETDB_URL = 'https://sheetdb.io/api/v1/lu6n1v2eknitd'; // URL SheetDB de l'utilisateur
+
 async function loadEntriesFromSheetDB() {
-    const SHEETDB_URL = 'https://sheetdb.io/api/v1/lu6n1v2eknitd'; // URL SheetDB de l'utilisateur
     try {
         const response = await fetch(SHEETDB_URL);
         const data = await response.json();
