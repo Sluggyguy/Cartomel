@@ -648,6 +648,7 @@ function resetPhotoFields() {
     photoDataURLInput.value = '';
     clearPhotoButton.style.display = 'none';
     loadingMessage.style.display = 'none';
+    window.photoDataURL = '';
 }
 
 // --- EVENT LISTENERS ---
@@ -755,6 +756,8 @@ form.addEventListener('submit', async function(event) {
     renderMapMarkers();
     resetPhotoFields();
     form.reset();
+    window.photoDataURL = '';
+    document.getElementById('photoDataURL').value = '';
 });
 
 // Gestion de la sélection de la photo : stocke le DataURL dans une variable globale
@@ -976,13 +979,15 @@ function renderMapMarkers(data) {
                     photoDataURLInput.value = entry.photoDataURL;
                     clearPhotoButton.style.display = 'inline-block';
                 } else if (entry.photoURL) {
-                    photoPreview.src = entry.photoURL;
-                    photoPreview.style.display = 'block';
-                    photoDataURLInput.value = '';
-                    clearPhotoButton.style.display = 'inline-block';
-                } else {
-                    resetPhotoFields();
-                }
+            photoPreview.src = entry.photoURL;
+            photoPreview.style.display = 'block';
+            photoDataURLInput.value = '';
+            clearPhotoButton.style.display = 'inline-block';
+            window.photoDataURL = '';
+        } else {
+            resetPhotoFields();
+            window.photoDataURL = '';
+        }
                 form.querySelector('button[type="submit"]').textContent = 'Modifier l\'Observation';
                 editingEntryId = entry.id;
                 form.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -1116,11 +1121,4 @@ async function loadEntriesFromSheetDB() {
             } else {
                 document.getElementById('tab-table').classList.add('active');
                 document.getElementById('tab-table-btn').classList.add('active');
-                if (typeof renderTable === 'function') {
-                    renderTable();
-                }
-            }
-        }
-    </script>
-</body>
-</html>
+                if (typeof 
