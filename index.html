@@ -384,7 +384,11 @@
     <div id="tab-table" class="tab-content">
         <section class="entries-section">
             <h2>Tableau des observations</h2>
-            <input type="text" id="search-table" placeholder="Rechercher..." style="margin-bottom:10px;width:300px;max-width:100%">
+            <div style="display:flex;gap:6px;align-items:center;margin-bottom:10px;">
+                <input type="text" id="search-table" placeholder="Rechercher..." style="width:300px;max-width:100%">
+                <button id="btn-search-table" title="Rechercher" style="padding:4px 9px;">🔍</button>
+                <button id="btn-clear-search-table" title="Effacer la recherche" style="padding:4px 9px;">❌</button>
+            </div>
             <div style="overflow-x:auto;"> <!-- For table responsiveness -->
                 <table id="entries-table">
                     <thead>
@@ -572,8 +576,8 @@ let editingEntryId = null;
 
         // --- EVENT LISTENERS ---
         // Recherche dans le tableau et sur la carte
-        document.getElementById('search-table').addEventListener('input', function() {
-            const query = this.value.trim().toLowerCase();
+        function doSearchTable() {
+            const query = document.getElementById('search-table').value.trim().toLowerCase();
             if (!query) {
                 filteredData = orchidData;
             } else {
@@ -591,6 +595,16 @@ let editingEntryId = null;
             }
             renderTable(filteredData);
             renderMapMarkers(filteredData);
+        }
+        document.getElementById('btn-search-table').addEventListener('click', doSearchTable);
+        document.getElementById('search-table').addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') doSearchTable();
+        });
+        document.getElementById('btn-clear-search-table').addEventListener('click', function() {
+            document.getElementById('search-table').value = '';
+            filteredData = orchidData;
+            renderTable();
+            renderMapMarkers();
         });
 
         // Mise à jour automatique de la commune lors de la saisie manuelle des coordonnées
