@@ -358,6 +358,10 @@
                             <input type="text" id="longitude" name="longitude" required placeholder="Ex: -1.6778">
                         </div>
                         <div>
+                            <label for="commune">Commune (auto):</label>
+                            <input type="text" id="commune" name="commune" readonly placeholder="Recherche automatique...">
+                        </div>
+                        <div>
                             <label for="date">Date:</label>
                             <input type="date" id="date" name="date" required>
                         </div>
@@ -389,6 +393,7 @@
                             <th>Date</th>
                             <th>Lat.</th>
                             <th>Lon.</th>
+                            <th>Commune</th>
                             <th>Notes</th>
                             <th>Actions</th>
                         </tr>
@@ -455,6 +460,28 @@
 let editingEntryId = null;
         let currentEditId = null;
         const form = document.getElementById('orchid-form');
+        const communeInput = document.getElementById('commune');
+
+        // Fonction pour remplir automatiquement la commune en fonction des coordonnées GPS
+        async function updateCommuneField(lat, lon) {
+            if (!lat || !lon || isNaN(lat) || isNaN(lon)) {
+                communeInput.value = '';
+                return;
+            }
+            communeInput.value = 'Recherche...';
+            try {
+                const url = `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&accept-language=fr`;
+                const response = await fetch(url, { headers: { 'User-Agent': 'CartomelApp/1.0 contact@cartomel.local' } });
+                const data = await response.json();
+                if (data && data.address && (data.address.village || data.address.town || data.address.city || data.address.municipality || data.address.county)) {
+                    communeInput.value = data.address.village || data.address.town || data.address.city || data.address.municipality || data.address.county || '';
+                } else {
+                    communeInput.value = '';
+                }
+            } catch (err) {
+                communeInput.value = '';
+            }
+        }
         const entriesTableBody = document.getElementById('entries-table').getElementsByTagName('tbody')[0];
         let markersLayer = L.layerGroup().addTo(map);
         const photoFileInput = document.getElementById('photoFile');
@@ -515,6 +542,7 @@ let editingEntryId = null;
                         if (latitude !== null && longitude !== null) {
                             document.getElementById('latitude').value = latitude.toFixed(5);
                             document.getElementById('longitude').value = longitude.toFixed(5);
+                            updateCommuneField(latitude, longitude);
                             alert("Coordonnées GPS extraites de la photo et insérées.");
                         } else {
                            alert("Impossible de convertir les coordonnées GPS de la photo.");
@@ -542,6 +570,21 @@ let editingEntryId = null;
         }
 
         // --- EVENT LISTENERS ---
+        // Mise à jour automatique de la commune lors de la saisie manuelle des coordonnées
+        document.getElementById('latitude').addEventListener('change', function() {
+            const lat = parseFloat(this.value.replace(',', '.'));
+            const lon = parseFloat(document.getElementById('longitude').value.replace(',', '.'));
+            if (!isNaN(lat) && !isNaN(lon)) {
+                updateCommuneField(lat, lon);
+            }
+        });
+        document.getElementById('longitude').addEventListener('change', function() {
+            const lat = parseFloat(document.getElementById('latitude').value.replace(',', '.'));
+            const lon = parseFloat(this.value.replace(',', '.'));
+            if (!isNaN(lat) && !isNaN(lon)) {
+                updateCommuneField(lat, lon);
+            }
+        });
         form.addEventListener('submit', async function(event) {
             event.preventDefault();
 
@@ -552,6 +595,7 @@ let editingEntryId = null;
             const lonValue = String(document.getElementById('longitude').value).replace(',', '.');
             const lat = latValue !== '' ? parseFloat(latValue) : '';
             const lon = lonValue !== '' ? parseFloat(lonValue) : '';
+            const commune = document.getElementById('commune').value || '';
             const notes = document.getElementById('notes').value.trim();
             const id = editingEntryId || Date.now().toString();
             // La photo reste en local pour affichage mais n'est pas envoyée à SheetDB
@@ -580,7 +624,7 @@ let editingEntryId = null;
             }
 
             const entry = { id, espece, date, lat, lon, notes, photoURL };
-            const entryForSheetDB = { id, espece, date, lat, lon, notes, photoURL };
+            const entryForSheetDB = { id, espece, date, lat, lon, commune, notes, photoURL };
 
             if (editingEntryId) {
                 await updateEntryInSheetDB(entryForSheetDB);
@@ -676,9 +720,10 @@ let editingEntryId = null;
             return data.data.link;
         }
 
-        map.on('click', function(e) {
+        map.on('click', async function(e) {
             document.getElementById('latitude').value = e.latlng.lat.toFixed(5);
             document.getElementById('longitude').value = e.latlng.lng.toFixed(5);
+            await updateCommuneField(e.latlng.lat, e.latlng.lng);
         });
 
         // --- TABLE RENDERING ---
@@ -726,6 +771,9 @@ let editingEntryId = null;
 
                 // Lon
                 row.insertCell().textContent = (typeof entry.lon === 'number' && !isNaN(entry.lon)) ? entry.lon.toFixed(5) : '';
+
+                // Commune
+                row.insertCell().textContent = entry.commune || '';
 
                 // Notes
                 const notesCell = row.insertCell();
@@ -791,7 +839,10 @@ let editingEntryId = null;
                 document.getElementById('species').value = entry.espece;
                 document.getElementById('notes').value = entry.notes;
                 document.getElementById('entry-id').value = entry.id;
-                
+                document.getElementById('commune').value = entry.commune || '';
+                if (entry.lat && entry.lon) {
+                    updateCommuneField(entry.lat, entry.lon);
+                }
                 if (entry.photoDataURL) {
                     photoPreview.src = entry.photoDataURL;
                     photoPreview.style.display = 'block';
@@ -821,6 +872,7 @@ async function loadEntriesFromSheetDB() {
             date: entry.Date,
             lat: entry.Latitude ? parseFloat(String(entry.Latitude).replace(',', '.')) : undefined,
             lon: entry.Longitude ? parseFloat(String(entry.Longitude).replace(',', '.')) : undefined,
+            commune: entry.Commune,
             notes: entry.Notes,
             photoURL: entry.PhotoURL
         })) : [];
