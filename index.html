@@ -553,33 +553,38 @@ let editingEntryId = null;
                 }
                 reader.readAsDataURL(file);
 
-                EXIF.getData(file, function() {
-                    loadingMessage.style.display = 'none';
-                    const latArr = EXIF.getTag(this, "GPSLatitude");
-                    const lonArr = EXIF.getTag(this, "GPSLongitude");
-                    const latRef = EXIF.getTag(this, "GPSLatitudeRef");
-                    const lonRef = EXIF.getTag(this, "GPSLongitudeRef");
+                // Extraction GPS UNIQUEMENT en mode ajout (pas en édition)
+                if (!editingEntryId) {
+                    EXIF.getData(file, function() {
+                        loadingMessage.style.display = 'none';
+                        const latArr = EXIF.getTag(this, "GPSLatitude");
+                        const lonArr = EXIF.getTag(this, "GPSLongitude");
+                        const latRef = EXIF.getTag(this, "GPSLatitudeRef");
+                        const lonRef = EXIF.getTag(this, "GPSLongitudeRef");
 
-                    if (latArr && lonArr && latRef && lonRef) {
-                        const latitude = convertDMSToDD(latArr[0], latArr[1], latArr[2], latRef);
-                        const longitude = convertDMSToDD(lonArr[0], lonArr[1], lonArr[2], lonRef);
+                        if (latArr && lonArr && latRef && lonRef) {
+                            const latitude = convertDMSToDD(latArr[0], latArr[1], latArr[2], latRef);
+                            const longitude = convertDMSToDD(lonArr[0], lonArr[1], lonArr[2], lonRef);
 
-                        // LOGS DEBUG : Affiche la valeur brute et la conversion
-                        console.log('EXIF Latitude:', latArr, latRef, '→', latitude);
-                        console.log('EXIF Longitude:', lonArr, lonRef, '→', longitude);
+                            // LOGS DEBUG : Affiche la valeur brute et la conversion
+                            console.log('EXIF Latitude:', latArr, latRef, '→', latitude);
+                            console.log('EXIF Longitude:', lonArr, lonRef, '→', longitude);
 
-                        if (latitude !== null && longitude !== null) {
-                            document.getElementById('latitude').value = latitude.toFixed(5);
-                            document.getElementById('longitude').value = longitude.toFixed(5);
-                            updateCommuneField(latitude, longitude);
-                            alert("Coordonnées GPS extraites de la photo et insérées.");
+                            if (latitude !== null && longitude !== null) {
+                                document.getElementById('latitude').value = latitude.toFixed(5);
+                                document.getElementById('longitude').value = longitude.toFixed(5);
+                                updateCommuneField(latitude, longitude);
+                                alert("Coordonnées GPS extraites de la photo et insérées.");
+                            } else {
+                               alert("Impossible de convertir les coordonnées GPS de la photo.");
+                            }
                         } else {
-                           alert("Impossible de convertir les coordonnées GPS de la photo.");
+                            alert("Aucune donnée GPS trouvée dans cette image. Veuillez les entrer manuellement ou cliquer sur la carte.");
                         }
-                    } else {
-                        alert("Aucune donnée GPS trouvée dans cette image. Veuillez les entrer manuellement ou cliquer sur la carte.");
-                    }
-                });
+                    });
+                } else {
+                    loadingMessage.style.display = 'none';
+                }
             } else {
                  resetPhotoFields();
             }
