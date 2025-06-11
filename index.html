@@ -777,12 +777,35 @@ form.addEventListener('submit', async function(event) {
 document.getElementById('photoFile').addEventListener('change', async function(event) {
     const file = event.target.files[0];
     if (file) {
-        // 1. Extraction EXIF (pour GPS, tu gardes ton code existant)
-        // 2. Compression automatique pour upload
         try {
             const compressedDataURL = await compressImage(file, 0.7, 1600, 1600);
             window.photoDataURL = compressedDataURL;
             document.getElementById('photoDataURL').value = compressedDataURL;
+
+            // Extraction GPS UNIQUEMENT si on n'est PAS en édition
+            if (!editingEntryId) {
+                EXIF.getData(file, function() {
+                    const latArr = EXIF.getTag(this, "GPSLatitude");
+                    const lonArr = EXIF.getTag(this, "GPSLongitude");
+                    const latRef = EXIF.getTag(this, "GPSLatitudeRef");
+                    const lonRef = EXIF.getTag(this, "GPSLongitudeRef");
+                    if (latArr && lonArr && latRef && lonRef) {
+                        const latitude = convertDMSToDD(latArr[0], latArr[1], latArr[2], latRef);
+                        const longitude = convertDMSToDD(lonArr[0], lonArr[1], lonArr[2], lonRef);
+                        if (latitude !== null && longitude !== null) {
+                            document.getElementById('latitude').value = latitude.toFixed(5);
+                            document.getElementById('longitude').value = longitude.toFixed(5);
+                            updateCommuneField(latitude, longitude);
+                            alert("Coordonnées GPS extraites de la photo et insérées.");
+                        } else {
+                            alert("Impossible de convertir les coordonnées GPS de la photo.");
+                        }
+                    } else {
+                        // Pas de GPS dans la photo
+                        // alert("Aucune donnée GPS trouvée dans cette image. Veuillez les entrer manuellement ou cliquer sur la carte.");
+                    }
+                });
+            }
         } catch (err) {
             alert('Erreur lors de la compression de la photo : ' + err.message);
             window.photoDataURL = '';
