@@ -634,7 +634,7 @@ let editingEntryId = null;
             const lon = lonValue !== '' ? parseFloat(lonValue) : '';
             const commune = document.getElementById('commune').value || '';
             const notes = document.getElementById('notes').value.trim();
-            const id = editingEntryId || Date.now().toString();
+            const id = editingEntryId || Math.random().toString(36).substr(2, 5).toUpperCase();
             // La photo reste en local pour affichage mais n'est pas envoyée à SheetDB
             // Utilise la variable globale (mise à jour lors de la sélection du fichier)
             const photoDataURL = window.photoDataURL || '';
