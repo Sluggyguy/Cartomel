@@ -861,7 +861,14 @@ let editingEntryId = null;
         }
 
         // --- MAP RENDERING ---
-        function renderMapMarkers() {
+        function formatDateFR(dateStr) {
+    if (!dateStr) return '';
+    const [yyyy, mm, dd] = dateStr.split('-');
+    if (yyyy && mm && dd) return `${dd}-${mm}-${yyyy}`;
+    return dateStr;
+}
+
+function renderMapMarkers() {
             markersLayer.clearLayers();
             orchidData.forEach(entry => {
                 // N'affiche la popup image que si la photo existe localement
