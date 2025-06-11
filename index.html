@@ -603,8 +603,8 @@ let editingEntryId = null;
         document.getElementById('btn-clear-search-table').addEventListener('click', function() {
             document.getElementById('search-table').value = '';
             filteredData = orchidData;
-            renderTable();
-            renderMapMarkers();
+            renderTable(filteredData);
+            renderMapMarkers(filteredData);
         });
 
         // Mise à jour automatique de la commune lors de la saisie manuelle des coordonnées
@@ -919,7 +919,7 @@ async function loadEntriesFromSheetDB() {
         // Adapter selon la structure réelle des données reçues
         orchidData = Array.isArray(data) ? data.map(entry => ({
             id: entry.ID,
-            espece: entry.Espece,
+            espece: entry.Esperce,
             date: entry.Date,
             lat: entry.Latitude ? parseFloat(String(entry.Latitude).replace(',', '.')) : undefined,
             lon: entry.Longitude ? parseFloat(String(entry.Longitude).replace(',', '.')) : undefined,
@@ -928,6 +928,7 @@ async function loadEntriesFromSheetDB() {
             notes: (typeof entry.Note !== 'undefined' ? entry.Note : ''),
             photoURL: entry.PhotoURL
         })) : [];
+        filteredData = orchidData;
         console.log("orchidData après parsing :", orchidData);
     } catch (err) {
         console.error("Erreur lors du chargement des données SheetDB :", err);
@@ -938,13 +939,16 @@ async function loadEntriesFromSheetDB() {
         // --- INITIAL LOAD ---
         async function initializeApp() {
             await loadEntriesFromSheetDB();
-            renderTable();
-            renderMapMarkers();
+            renderTable(filteredData);
+            renderMapMarkers(filteredData);
             resetPhotoFields(); // Ensure photo fields are clear on initial load
         }
 
         document.addEventListener('DOMContentLoaded', initializeApp);
-
+    // Affichage initial : tout afficher
+    renderTable(filteredData);
+    renderMapMarkers(filteredData);
+});
 
     </script>
 </body>
